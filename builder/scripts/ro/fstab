@@ -1,0 +1,3 @@
+/dev/mmcblk0p1  /boot   vfat    defaults,ro,errors=remount-ro   0 0
+tmpfs   /var/log    tmpfs   nodev,nosuid   0 0
+tmpfs   /var/tmp    tmpfs   nodev,nosuid   0 0
