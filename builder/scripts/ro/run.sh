@@ -5,6 +5,8 @@ set -x
 . ../functions.sh
 
 # Based on https://gist.github.com/yeokm1/8b0ffc03e622ce011010
+mkdir "$FS/var/lib/private"
+chmod 700 "$FS/var/lib/private"
 cp fstab "$FS/etc/fstab"
 sed -i -e "s|\<rw\>|ro|g" "$FS/boot/cmdline.txt"
 cp ro.sh "$FS/usr/local/bin/ro"
