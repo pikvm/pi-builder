@@ -46,6 +46,7 @@ rpi pacman --noconfirm -Syu
 
 rpi pacman --noconfirm -S \
 	vim \
+	colordiff \
 	wget \
 	unzip \
 	htop \
