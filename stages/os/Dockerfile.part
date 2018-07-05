@@ -30,6 +30,7 @@ RUN pacman --noconfirm -Syy \
 RUN pacman --noconfirm -S \
 		vim \
 		colordiff \
+		tree \
 		wget \
 		unzip \
 		htop \
