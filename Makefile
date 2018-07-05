@@ -16,7 +16,6 @@ REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
 # =====
 _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
-_MNT_DIR = ./.mnt
 _BUILDED_IMAGE = ./.builded_image
 
 _QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
@@ -135,48 +134,55 @@ clean:
 	rm -rf $(_BUILD_DIR) $(_BUILDED_IMAGE)
 
 
-clean-all: clean
-	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
+__DOCKER_RUN_TMP = docker run \
+	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
+	-w /root/$(_TMP_DIR)/.. \
+	--rm -it $(_ROOT_RUNNER)
+
+
+__DOCKER_RUN_TMP_PRIVILEGED = docker run \
+	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
+	-w /root/$(_TMP_DIR)/.. \
+	--privileged --rm -it $(_ROOT_RUNNER)
+
+
+clean-all: _root_runner clean
+	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	rm -rf $(_TMP_DIR)
 
 
-format:
-	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
+format: _root_runner
 	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
 	@ ./tools/say "===== Formatting $(CARD) ====="
-	#
-	echo -e "o\nn\np\n1\n\n+128M\nt\nc\nn\np\n2\n\n\nw\n" | fdisk $(CARD) || true
-	partprobe $(CARD)
-	mkfs.vfat $(CARD_BOOT)
-	yes | mkfs.ext4 $(CARD_ROOT)
+	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
+		(echo -e "o\nn\np\n1\n\n+128M\nt\nc\nn\np\n2\n\n\nw\n" | fdisk $(CARD) || true) \
+		&& partprobe $(CARD) \
+		&& mkfs.vfat $(CARD_BOOT) \
+		&& yes | mkfs.ext4 $(CARD_ROOT) \
+	"
 	@ ./tools/say "===== Format complete ====="
 
 
-extract:
-	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
+extract: _root_runner
 	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
 	@ ./tools/say "===== Extracting image from Docker ====="
 	#
-	rm -rf $(_RPI_RESULT_ROOTFS)
+	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	docker save --output $(_RPI_RESULT_ROOTFS_TAR) `cat $(_BUILDED_IMAGE)`
-	./tools/docker-extract --debug --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
-	echo $(HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname
+	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
+	$(__DOCKER_RUN_TMP) bash -c "echo $(HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname"
 	@ ./tools/say "===== Extraction complete ====="
 
 
 install: extract format
-	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
-	#
 	@ ./tools/say "===== Installing to $(CARD) ====="
-	mkdir $(_MNT_DIR) $(_MNT_DIR)/boot $(_MNT_DIR)/rootfs
-	#
-	mount $(CARD_BOOT) $(_MNT_DIR)/boot
-	mount $(CARD_ROOT) $(_MNT_DIR)/rootfs
-	rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/boot/* $(_MNT_DIR)/boot
-	rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/* $(_MNT_DIR)/rootfs --exclude boot
-	mkdir $(_MNT_DIR)/rootfs/boot
-	#
-	umount $(_MNT_DIR)/boot $(_MNT_DIR)/rootfs
-	rmdir $(_MNT_DIR)/boot $(_MNT_DIR)/rootfs $(_MNT_DIR)
-	#
+	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
+		mkdir -p mnt/boot mnt/rootfs \
+		&& mount $(CARD_BOOT) mnt/boot \
+		&& mount $(CARD_ROOT) mnt/rootfs \
+		&& rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/boot/* mnt/boot \
+		&& rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/* mnt/rootfs --exclude boot \
+		&& mkdir mnt/rootfs/boot \
+		&& umount mnt/boot mnt/rootfs \
+	"
 	@ ./tools/say "===== Installation complete ====="

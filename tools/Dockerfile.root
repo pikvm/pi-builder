@@ -1,9 +1,15 @@
 FROM base/archlinux
 
 RUN pacman --noconfirm -Syu \
-	&& pacman --noconfirm -S arp-scan \
+	&& pacman --noconfirm -S \
+		arp-scan \
+		python \
+		parted \
+		dosfstools \
+		rsync \
 	&& pacman --noconfirm -Sc
 
 COPY say /usr/local/bin/
 COPY die /usr/local/bin/
 COPY install-binfmt /usr/local/bin/
+COPY docker-extract /usr/local/bin/
