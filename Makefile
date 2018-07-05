@@ -1,36 +1,36 @@
-CARD=/dev/mmcblk0
-CARD_BOOT=$(CARD)p1
-CARD_ROOT=$(CARD)p2
+CARD ?= /dev/mmcblk0
+CARD_BOOT ?= $(CARD)p1
+CARD_ROOT ?= $(CARD)p2
 
-PLATFORM=rpi
-STAGES=base
+PLATFORM ?= rpi
+STAGES ?= base
 
-PROJECT=
-QEMU_ARM_STATIC_PLACE=/usr/bin/qemu-arm-static
-HOSTNAME=pi
-LOCALE=en_US.UTF-8
-TIMEZONE=Europe/Moscow
-REPO_URL=http://mirror.yandex.ru/archlinux-arm
+PROJECT ?= common
+QEMU_ARM_STATIC_PLACE ?= /usr/bin/qemu-arm-static
+HOSTNAME ?= pi
+LOCALE ?= en_US.UTF-8
+TIMEZONE ?= Europe/Moscow
+REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
 
 
 # =====
-_TMP_DIR=./.tmp
-_BUILD_DIR=./.build
-_MNT_DIR=./.mnt
-_BUILDED_IMAGE=./.builded_image
+_TMP_DIR = ./.tmp
+_BUILD_DIR = ./.build
+_MNT_DIR = ./.mnt
+_BUILDED_IMAGE = ./.builded_image
 
-_QEMU_USER_STATIC_BASE_URL=http://mirror.yandex.ru/debian/pool/main/q/qemu
-_QEMU_ARM_STATIC=$(_TMP_DIR)/qemu-arm-static
+_QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
+_QEMU_ARM_STATIC = $(_TMP_DIR)/qemu-arm-static
 
-_IMAGES_PREFIX=pi-builder
+_IMAGES_PREFIX = pi-builder
 
-_ROOT_RUNNER=$(_IMAGES_PREFIX)-root-runner
+_ROOT_RUNNER = $(_IMAGES_PREFIX)-root-runner
 
-_RPI_BASE_ROOTFS_TGZ=$(_TMP_DIR)/base-rootfs.tar.gz
-_RPI_BASE_IMAGE=$(_IMAGES_PREFIX)-base-$(PLATFORM)
-_RPI_RESULT_IMAGE=$(PROJECT)-$(_IMAGES_PREFIX)-result-$(PLATFORM)
-_RPI_RESULT_ROOTFS_TAR=$(_TMP_DIR)/result-rootfs.tar
-_RPI_RESULT_ROOTFS=$(_TMP_DIR)/result-rootfs
+_RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs.tar.gz
+_RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(PLATFORM)
+_RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(PLATFORM)
+_RPI_RESULT_ROOTFS_TAR = $(_TMP_DIR)/result-rootfs.tar
+_RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
 
 
 # =====
