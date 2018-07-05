@@ -5,6 +5,7 @@ CARD_ROOT=$(CARD)p2
 PLATFORM=rpi
 STAGES=base
 
+PROJECT=
 QEMU_ARM_STATIC_PLACE=/usr/bin/qemu-arm-static
 HOSTNAME=pi
 LOCALE=en_US.UTF-8
@@ -13,54 +14,67 @@ REPO_URL=http://mirror.yandex.ru/archlinux-arm
 
 
 # =====
-all:
-	@ echo "Available commands:"
-	@ echo "    make           # Print this help"
-	@ echo "    make binfmt    # Before build"
-	@ echo "    make rpi|rpi2  # Build Arch-ARM rootfs"
-	@ echo "    make clean     # Remove the generated rootfs"
-	@ echo "    make format    # Format $(CARD) to $(CARD_BOOT) (vfat), $(CARD_ROOT) (ext4)"
-	@ echo "    make install   # Install rootfs to partitions on $(CARD)"
-	@ echo "    make scan      # Find all RPi devices in the local network"
-
-
-binfmt:
-	./tools/install-binfmt $(QEMU_ARM_STATIC_PLACE)
-
-
-rpi:
-	make _rpi \
-		PLATFORM=rpi \
-		STAGES="base os ssh watchdog ro"
-
-
-rpi2:
-	make _rpi \
-		PLATFORM=rpi-2 \
-		STAGES="base os ssh watchdog ro"
-
-
-shell:
-	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
-	docker run --rm -it `cat $(_BUILDED_IMAGE)` /bin/bash
-
-
-# =====
 _TMP_DIR=./.tmp
 _BUILD_DIR=./.build
 _MNT_DIR=./.mnt
 _BUILDED_IMAGE=./.builded_image
 
-_RPI_BASE_ROOTFS_URL=http://mirror.yandex.ru/archlinux-arm/os
-_RPI_BASE_ROOTFS_TGZ=$(_TMP_DIR)/base-rootfs.tar.gz
-
 _QEMU_USER_STATIC_BASE_URL=http://mirror.yandex.ru/debian/pool/main/q/qemu
 _QEMU_ARM_STATIC=$(_TMP_DIR)/qemu-arm-static
 
-_RPI_BASE_IMAGE=pi-base-$(PLATFORM)
-_RPI_RESULT_IMAGE=pi-result-$(PLATFORM)
+_IMAGES_PREFIX=pi-builder
+
+_ROOT_RUNNER=$(_IMAGES_PREFIX)-root-runner
+
+_RPI_BASE_ROOTFS_TGZ=$(_TMP_DIR)/base-rootfs.tar.gz
+_RPI_BASE_IMAGE=$(_IMAGES_PREFIX)-base-$(PLATFORM)
+_RPI_RESULT_IMAGE=$(PROJECT)-$(_IMAGES_PREFIX)-result-$(PLATFORM)
 _RPI_RESULT_ROOTFS_TAR=$(_TMP_DIR)/result-rootfs.tar
 _RPI_RESULT_ROOTFS=$(_TMP_DIR)/result-rootfs
+
+
+# =====
+all:
+	@ echo "Available commands:"
+	@ echo "    make           # Print this help"
+	@ echo "    make rpi|rpi2  # Build Arch-ARM rootfs"
+	@ echo "    make shell     # Run Arch-ARM shell"
+	@ echo "    make binfmt    # Before build"
+	@ echo "    make scan      # Find all RPi devices in the local network"
+	@ echo "    make clean     # Remove the generated rootfs"
+	@ echo "    make format    # Format $(CARD) to $(CARD_BOOT) (vfat), $(CARD_ROOT) (ext4)"
+	@ echo "    make install   # Install rootfs to partitions on $(CARD)"
+
+
+rpi: binfmt
+	make _rpi \
+		PLATFORM=rpi \
+		STAGES="base os ssh watchdog ro"
+
+
+rpi2: binfmt
+	make _rpi \
+		PLATFORM=rpi-2 \
+		STAGES="base os ssh watchdog ro"
+
+
+shell: binfmt
+	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
+	docker run --rm -it `cat $(_BUILDED_IMAGE)` /bin/bash
+
+
+binfmt: _root_runner
+	docker run --privileged --rm -it $(_ROOT_RUNNER) install-binfmt $(QEMU_ARM_STATIC_PLACE)
+
+
+scan: _root_runner
+	@ ./tools/say "===== Searching pies in the local network ====="
+	docker run --net=host --rm -it $(_ROOT_RUNNER) arp-scan --localnet | grep b8:27:eb: || true
+
+
+# =====
+_root_runner:
+	docker build --rm --tag $(_ROOT_RUNNER) tools -f tools/Dockerfile.root
 
 
 _rpi: _buildctx
@@ -92,7 +106,7 @@ _buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_ARM_STATIC)
 
 $(_RPI_BASE_ROOTFS_TGZ): $(_TMP_DIR)
 	@ ./tools/say "===== Fetching base rootfs ====="
-	curl -L -f $(_RPI_BASE_ROOTFS_URL)/ArchLinuxARM-$(PLATFORM)-latest.tar.gz -z $@ -o $@
+	curl -L -f $(REPO_URL)/os/ArchLinuxARM-$(PLATFORM)-latest.tar.gz -z $@ -o $@
 
 
 $(_QEMU_ARM_STATIC): $(_TMP_DIR)
@@ -116,6 +130,7 @@ $(_TMP_DIR):
 	mkdir -p $(_TMP_DIR)
 
 
+# =====
 clean:
 	rm -rf $(_BUILD_DIR) $(_BUILDED_IMAGE)
 
@@ -165,8 +180,3 @@ install: extract format
 	rmdir $(_MNT_DIR)/boot $(_MNT_DIR)/rootfs $(_MNT_DIR)
 	#
 	@ ./tools/say "===== Installation complete ====="
-
-
-scan:
-	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
-	arp-scan --localnet | grep b8:27:eb: || true

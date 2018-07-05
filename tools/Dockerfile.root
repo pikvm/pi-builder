@@ -1,0 +1,9 @@
+FROM base/archlinux
+
+RUN pacman --noconfirm -Syu \
+	&& pacman --noconfirm -S arp-scan \
+	&& pacman --noconfirm -Sc
+
+COPY say /usr/local/bin/
+COPY die /usr/local/bin/
+COPY install-binfmt /usr/local/bin/
