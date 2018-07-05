@@ -40,6 +40,11 @@ rpi2:
 		STAGES="base os ssh watchdog ro"
 
 
+shell:
+	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
+	docker run --rm -it `cat $(_BUILDED_IMAGE)` /bin/bash
+
+
 # =====
 _TMP_DIR=./.tmp
 _BUILD_DIR=./.build
@@ -100,11 +105,11 @@ $(_QEMU_ARM_STATIC): $(_TMP_DIR)
 			| sort -n \
 			| tail -n 1 \
 			| sed -n 's/.*href="\([^"]*\).*/\1/p'` -z $@ \
-		-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
-	&& cd $(_TMP_DIR)/qemu-user-static-deb \
+		-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb
+	- cd $(_TMP_DIR)/qemu-user-static-deb \
 	&& ar vx qemu-user-static.deb \
-	&& tar -xJf data.tar.xz \
-	&& cp usr/bin/qemu-arm-static ../../$@
+	&& tar -xJf data.tar.xz
+	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $@
 
 
 $(_TMP_DIR):
@@ -116,6 +121,7 @@ clean:
 
 
 clean-all: clean
+	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
 	rm -rf $(_TMP_DIR)
 
 
@@ -123,21 +129,28 @@ format:
 	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
 	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
 	@ ./tools/say "===== Formatting $(CARD) ====="
+	#
 	echo -e "o\nn\np\n1\n\n+128M\nt\nc\nn\np\n2\n\n\nw\n" | fdisk $(CARD) || true
 	partprobe $(CARD)
 	mkfs.vfat $(CARD_BOOT)
 	yes | mkfs.ext4 $(CARD_ROOT)
+	@ ./tools/say "===== Format complete ====="
 
 
-install: format
+extract:
 	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
 	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
-	#
 	@ ./tools/say "===== Extracting image from Docker ====="
+	#
 	rm -rf $(_RPI_RESULT_ROOTFS)
 	docker save --output $(_RPI_RESULT_ROOTFS_TAR) `cat $(_BUILDED_IMAGE)`
-	./tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
+	./tools/docker-extract --debug --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	echo $(HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname
+	@ ./tools/say "===== Extraction complete ====="
+
+
+install: extract format
+	@ test `whoami` == root || ./tools/die "===== Run as root plz ====="
 	#
 	@ ./tools/say "===== Installing to $(CARD) ====="
 	mkdir $(_MNT_DIR) $(_MNT_DIR)/boot $(_MNT_DIR)/rootfs
