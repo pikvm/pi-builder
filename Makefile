@@ -48,13 +48,13 @@ all:
 rpi: binfmt
 	make _rpi \
 		PLATFORM=rpi \
-		STAGES="base os ssh watchdog ro"
+		STAGES="base os ssh watchdog ro cleanup"
 
 
 rpi2: binfmt
 	make _rpi \
 		PLATFORM=rpi-2 \
-		STAGES="base os ssh watchdog ro"
+		STAGES="base os ssh watchdog ro cleanup"
 
 
 shell: binfmt
@@ -103,14 +103,15 @@ _buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_ARM_STATIC)
 	done
 
 
-$(_RPI_BASE_ROOTFS_TGZ): $(_TMP_DIR)
+$(_RPI_BASE_ROOTFS_TGZ):
+	mkdir -p $(_TMP_DIR)
 	@ ./tools/say "===== Fetching base rootfs ====="
 	curl -L -f $(REPO_URL)/os/ArchLinuxARM-$(PLATFORM)-latest.tar.gz -z $@ -o $@
 
 
-$(_QEMU_ARM_STATIC): $(_TMP_DIR)
+$(_QEMU_ARM_STATIC):
+	mkdir -p $(_TMP_DIR)
 	@ ./tools/say "===== QEMU magic ====="
-	rm -rf $(_TMP_DIR)/qemu-user-static-deb
 	mkdir -p $(_TMP_DIR)/qemu-user-static-deb
 	curl -L -f $(_QEMU_USER_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_USER_STATIC_BASE_URL)/ -z $@ \
 			| grep qemu-user-static \
@@ -119,14 +120,10 @@ $(_QEMU_ARM_STATIC): $(_TMP_DIR)
 			| tail -n 1 \
 			| sed -n 's/.*href="\([^"]*\).*/\1/p'` -z $@ \
 		-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb
-	- cd $(_TMP_DIR)/qemu-user-static-deb \
+	cd $(_TMP_DIR)/qemu-user-static-deb \
 	&& ar vx qemu-user-static.deb \
 	&& tar -xJf data.tar.xz
 	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $@
-
-
-$(_TMP_DIR):
-	mkdir -p $(_TMP_DIR)
 
 
 # =====
@@ -170,7 +167,11 @@ extract: _root_runner
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	docker save --output $(_RPI_RESULT_ROOTFS_TAR) `cat $(_BUILDED_IMAGE)`
 	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
-	$(__DOCKER_RUN_TMP) bash -c "echo $(HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname"
+	$(__DOCKER_RUN_TMP) bash -c " \
+		echo $(HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
+		&& mv $(_RPI_RESULT_ROOTFS)/$(QEMU_ARM_STATIC_PLACE) $(_RPI_RESULT_ROOTFS)/usr/local/bin \
+		&& ln -sf $(QEMU_ARM_STATIC_PLACE) $(_RPI_RESULT_ROOTFS)/usr/local/bin/qemu-arm-static \
+	"
 	@ ./tools/say "===== Extraction complete ====="
 
 

@@ -1,3 +1,5 @@
+RUN userdel -r -f alarm
+
 # https://lists.gnu.org/archive/html/qemu-devel/2017-10/msg03681.html
 # RUN locale-gen en_US.UTF-8
 RUN echo "$LOCALE UTF-8" > /etc/locale.gen \
@@ -48,7 +50,7 @@ RUN pacman --noconfirm -S \
 		sudo \
 	&& pacman --noconfirm -Sc
 
-RUN useradd -r packer \
+RUN useradd -r -d / packer \
 	&& cd /tmp \
 	&& sudo -u packer git clone https://aur.archlinux.org/packer-color.git \
 	&& cd packer-color \
