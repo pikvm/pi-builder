@@ -1,0 +1,9 @@
+FROM scratch
+
+ARG QEMU_ARM_STATIC_PLACE
+ARG LOCALE
+ARG TIMEZONE
+ARG REPO_URL
+
+ADD base-rootfs.tar.gz /
+COPY qemu-arm-static "$QEMU_ARM_STATIC_PLACE"

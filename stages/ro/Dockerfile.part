@@ -1,0 +1,15 @@
+# Based on https://gist.github.com/yeokm1/8b0ffc03e622ce011010
+
+RUN sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
+
+RUN mkdir -p /var/lib/private \
+	&& chmod 700 /var/lib/private
+
+RUN systemctl disable systemd-random-seed \
+	&& systemctl disable systemd-update-done \
+	&& systemctl mask man-db.service \
+	&& systemctl mask man-db.timer
+
+COPY stages/ro/fstab /etc/fstab
+COPY stages/ro/ro /usr/local/bin/
+COPY stages/ro/rw /usr/local/bin/

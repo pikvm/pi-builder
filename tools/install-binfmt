@@ -1,0 +1,45 @@
+#!/bin/sh
+set -e
+
+
+say() {
+	tput setaf 2
+	echo "$@"
+	tput sgr0
+}
+
+
+die() {
+	tput setaf 1
+	echo "$@" 1>&2
+	tput sgr0
+	exit 1
+}
+
+
+install_binfmt_arm() {
+	local binfmt_dir="/proc/sys/fs/binfmt_misc"
+	local binfmt_arm="$binfmt_dir/arm"
+
+	say " >>> Configuring ARM-binfmt..."
+	mount binfmt_misc -t binfmt_misc "$binfmt_dir"
+	if [ -e "$binfmt_arm" ]; then
+		local real_qemu_arm_static=`grep interpreter "$binfmt_arm" | awk '{print $2}'`
+		if [ "$1" != "$real_qemu_arm_static" ]; then
+			die -e " ARM-binfmt is enabled but path is inconsistent\n"\
+				"  > $binfmt_arm: $real_qemu_arm_static\n"\
+				"  > expected: $1\n"\
+				" Run \"echo -1 > $binfmt_arm\" to disable ARM globally (include host system)"
+		else
+			say " >>> ARM-binfmt is OK"
+		fi
+	else
+		say -e " >>> Enabling ARM-binfmt..."
+		echo ":arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:$1:" > "$binfmt_dir/register"
+	fi
+}
+
+
+[ -n "$1" ] || die "===== Empty QEMU_ARM_STATIC_PLACE arg ====="
+[ `whoami` == "root" ] || die "===== Run as root plz ====="
+install_binfmt_arm "$1"

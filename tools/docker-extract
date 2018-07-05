@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+#
+# Based on http://blog.oddbit.com/2015/02/13/unpacking-docker-images
+#    https://github.com/larsks/undocker
+#
+# Simplified, cleared AND (!) correct extracts .wh. and symlinks
+#
+# Docker image specification:
+#    https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+
+
+import os
+import tarfile
+import shutil
+import json
+import contextlib
+import argparse
+import logging
+
+from typing import Tuple
+from typing import List
+from typing import Generator
+
+
+# =====
+_logger = logging.getLogger("docker-extract")
+
+
+def _readed_layers(image_tar: tarfile.TarFile, layer_id: str) -> Generator[str, None, None]:
+    info_path = os.path.join(layer_id, "json")
+    with contextlib.closing(image_tar.extractfile(info_path)) as info_file:
+        info = json.load(info_file, encoding="utf-8")
+
+    _logger.debug("::    Layer: %s", layer_id)
+    for field in ["os", "architecture", "author", "created"]:
+        if field in info:
+            _logger.debug("::        %s: %s", field, info[field])
+
+    yield layer_id
+    if "parent" in info:  # Parent layer id
+        yield from _readed_layers(image_tar, info["parent"])
+
+
+def _read_layers(image_tar: tarfile.TarFile, top_layer_id: str) -> List[str]:
+    return list(reversed(list(_readed_layers(image_tar, top_layer_id))))
+
+
+def _parse_image_name(image_name: str) -> Tuple[str, str]:
+    try:
+        (path, base) = image_name.rsplit("/", maxsplit=1)
+    except ValueError:
+        (path, base) = ("", image_name)
+    try:
+        (name, tag) = base.rsplit(":", maxsplit=1)
+    except ValueError:
+        (name, tag) = (base, "latest")
+    if path:
+        name = path + "/" + name
+    return (name, tag)
+
+
+def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: str) -> None:
+    if os.path.exists(root_path):
+        raise RuntimeError("%s: is already exists" % (root_path))
+    os.mkdir(root_path)
+
+    for layer_id in layers:
+        _logger.debug(":: Extracting layer: %s", layer_id)
+        layer_path = os.path.join(layer_id, "layer.tar")
+        with tarfile.TarFile(fileobj=image_tar.extractfile(layer_path), errorlevel=1) as layer_tar:
+            members = layer_tar.getmembers()
+            for member in members:
+                member_path = os.path.join(root_path, member.path)
+                assert not member_path.startswith(".wh."), member_path
+                if "/.wh." in member_path:
+                    whiteout = member_path.replace("/.wh.", "/")
+                    if os.path.isdir(whiteout):
+                        _logger.debug("::    Removing whiteout dir: %s", whiteout)
+                        shutil.rmtree(whiteout)
+                    else:
+                        _logger.debug("::    Removing whiteout file: %s", whiteout)
+                        os.unlink(whiteout)
+
+            layer_tar.extractall(
+                path=root_path,
+                members=[member for member in members if "/.wh." not in member.path],
+                numeric_owner=True,
+            )
+
+
+def _patch_os_symlink() -> None:
+    # XXX: symlinks hacks, see tarfile.py:2209 for details
+    orig_os_symlink = os.symlink
+
+    def rewrite_symlink(src: str, dest: str) -> None:
+        if os.path.islink(dest):
+            os.unlink(dest)
+        orig_os_symlink(src, dest)
+
+    os.symlink = rewrite_symlink
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--image", default="", help="Image name")
+    parser.add_argument("-o", "--root", default="rootfs", help="Output directory (defaults to 'rootfs')")
+    parser.add_argument("--show-layers", action="store_true", help="List layers in an image")
+    parser.add_argument("--show-images", action="store_true", help="List images/tags contained in archive")
+    parser.add_argument("-d", "--debug", action="store_const", const=logging.DEBUG, dest="log_level")
+    parser.add_argument("input")
+    parser.set_defaults(log_level=logging.INFO)
+
+    options = parser.parse_args()
+    logging.basicConfig(level=options.log_level, format="%(message)s")
+    _patch_os_symlink()
+
+    with tarfile.open(options.input) as image_tar:
+        with contextlib.closing(image_tar.extractfile("repositories")) as repos_file:
+            repos = json.load(repos_file, encoding="utf-8")
+
+        if options.show_images:
+            for (name, tags) in repos.items():
+                print("%s\n    %s" % (name, "\n    ".join(tags)))
+
+        else:
+            if options.image:
+                (name, tag) = _parse_image_name(options.image)
+            elif len(repos) == 1:
+                name = list(repos.keys())[0]
+                tag = list(repos[name].keys())[0]
+            else:
+                raise RuntimeError("No image name specified and multiple images contained in archive")
+
+            try:
+                top_layer_id = repos[name][tag]
+            except KeyError:
+                raise RuntimeError("Failed to find image %r with tag %r" % (name, tag))
+
+            _logger.debug(":: Reading image %s (%s)", name, top_layer_id)
+            layers = _read_layers(image_tar, top_layer_id)
+
+            if options.show_layers:
+                print("\n".join(layers))
+
+            else:
+                _extract_rootfs(image_tar, layers, options.root)
+
+
+if __name__ == "__main__":
+    main()

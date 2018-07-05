@@ -1,0 +1,9 @@
+COPY stages/ssh/pubkeys pubkeys
+RUN cat pubkeys/*.pub > /etc/ssh/authorized_keys \
+	&& chmod 600 /etc/ssh/authorized_keys \
+	&& rm -rf pubkeys
+
+RUN sed -i -e "s|AuthorizedKeysFile[[:space:]]\+\.ssh/authorized_keys|AuthorizedKeysFile /etc/ssh/authorized_keys|g" "/etc/ssh/sshd_config" \
+	&& echo "PasswordAuthentication no" >> "$FS/etc/ssh/sshd_config"
+
+RUN ssh-keygen -A

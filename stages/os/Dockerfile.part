@@ -1,0 +1,71 @@
+# https://lists.gnu.org/archive/html/qemu-devel/2017-10/msg03681.html
+# RUN locale-gen en_US.UTF-8
+RUN echo "$LOCALE UTF-8" > /etc/locale.gen \
+	&& cd /usr/share/i18n/charmaps \
+	&& gunzip --keep UTF-8.gz \
+	&& locale-gen en_US.UTF-8
+ENV LC_ALL $LOCALE
+
+RUN rm -f /etc/localtime \
+	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+
+RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
+	&& pacman-key --init \
+	&& pacman-key --populate archlinuxarm
+
+RUN pacman --noconfirm -Syy \
+	&& pacman --noconfirm -S pacman \
+	&& pacman-db-upgrade \
+	&& pacman --noconfirm -Syu \
+	&& pacman --noconfirm -S \
+		archlinux-keyring \
+		ca-certificates \
+		ca-certificates-cacert \
+		ca-certificates-mozilla \
+		ca-certificates-utils \
+	&& pacman --noconfirm -Sc
+
+RUN pacman --noconfirm -S \
+		vim \
+		colordiff \
+		wget \
+		unzip \
+		htop \
+		iftop \
+		iotop \
+		strace \
+		lsof \
+		patch \
+		make \
+		fakeroot \
+		binutils \
+		arch-install-scripts \
+		gcc \
+		git \
+		jshon \
+		pyalpm \
+		expac \
+		sudo \
+	&& pacman --noconfirm -Sc
+
+RUN useradd -r packer \
+	&& cd /tmp \
+	&& sudo -u packer git clone https://aur.archlinux.org/packer-color.git \
+	&& cd packer-color \
+	&& sudo -u packer makepkg \
+	&& pacman --noconfirm -U packer-color-*.pkg.tar.xz \
+	&& ln -s /usr/bin/packer-color /usr/local/bin/packer \
+	&& cp /usr/bin/packer-color /usr/local/bin/user-packer \
+	&& sed -i -e "s|makepkg \$MAKEPKGOPTS |chown -R packer:packer \$dir; makepkg \$MAKEPKGOPTS |g" \
+		/usr/local/bin/user-packer \
+	&& sed -i -e "s|makepkg \$MAKEPKGOPTS --asroot -f|sudo -u packer makepkg \$MAKEPKGOPTS -f|g" \
+		/usr/local/bin/user-packer \
+	&& cd - \
+	&& rm -rf /tmp/packer-color
+
+COPY stages/os/pkg-install /usr/local/bin/
+COPY stages/os/setup-profile /usr/local/bin/
+COPY say /usr/local/bin/
+COPY die /usr/local/bin/
+
+RUN setup-profile /root

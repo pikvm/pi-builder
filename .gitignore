@@ -1,3 +1,4 @@
-/builder/Dockerfile
-/rootfs
-/mnt
+/.mnt/
+/.tmp/
+/.build/
+/.builded_image
