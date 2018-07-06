@@ -1,2 +1,0 @@
-RUN echo "HOOKS=(base udev modconf block filesystems)" >> /etc/mkinitcpio.conf
-RUN mkinitcpio -k `pacman -Q linux-raspberrypi | awk '{print $2}'`-ARCH -g /boot/initramfs-linux.img

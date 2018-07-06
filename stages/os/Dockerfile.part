@@ -8,6 +8,8 @@ ENV LC_ALL $LOCALE
 RUN rm -f /etc/localtime \
 	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 
+RUN echo "HOOKS=(base udev block filesystems)" >> /etc/mkinitcpio.conf
+
 RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 	&& pacman-key --init \
 	&& pacman-key --populate archlinuxarm
