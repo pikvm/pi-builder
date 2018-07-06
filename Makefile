@@ -3,7 +3,7 @@ CARD_BOOT ?= $(CARD)p1
 CARD_ROOT ?= $(CARD)p2
 
 PLATFORM ?= rpi
-STAGES ?= base
+STAGES ?= __init__
 
 PROJECT ?= common
 QEMU_ARM_STATIC_PLACE ?= /usr/bin/qemu-arm-static
@@ -48,13 +48,13 @@ all:
 rpi: binfmt
 	make _rpi \
 		PLATFORM=rpi \
-		STAGES="base os ssh watchdog ro cleanup"
+		STAGES="__init__ os ssh watchdog ro __cleanup__"
 
 
 rpi2: binfmt
 	make _rpi \
 		PLATFORM=rpi-2 \
-		STAGES="base os ssh watchdog ro cleanup"
+		STAGES="__init__ os ssh watchdog ro __cleanup__"
 
 
 shell: binfmt
