@@ -1,7 +1,0 @@
-[Unit]
-Description=Creates /.varlib/{upper,work}
-
-[Service]
-Type=oneshot
-ExecStart=/bin/bash -c "mkdir /.varlib/{upper,work}"
-RemainAfterExit=true

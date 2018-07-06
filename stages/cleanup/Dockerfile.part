@@ -1,12 +1,13 @@
 RUN rm -rf \
-	/etc/*- \
-	/var/lib/systemd/* \
-	/var/lib/private/* \
-	/var/log/* \
-	/var/tmp/* \
-	/tmp/* \
-	/run/* \
-	/root/.bash_history \
-	/root/.cache \
-	/home/*/.bash_history \
-	/home/*/.cache
+		/etc/*- \
+		/var/lib/systemd/* \
+		/var/lib/private/* \
+		/var/log/* \
+		/var/tmp/* \
+		/tmp/* \
+		/run/* \
+		/root/.bash_history \
+		/root/.cache \
+		/home/*/.bash_history \
+		/home/*/.cache \
+	`LC_ALL=C pacman -Qo /var/cache/* 2>&1 | grep 'error: No package owns' | awk '{print $5}'`
