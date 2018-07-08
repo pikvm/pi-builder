@@ -6,6 +6,7 @@ PLATFORM ?= rpi
 STAGES ?= __init__
 
 PROJECT ?= common
+BUILD_OPTS ?=
 QEMU_ARM_STATIC_PLACE ?= /usr/bin/qemu-arm-static
 HOSTNAME ?= pi
 LOCALE ?= en_US.UTF-8
@@ -79,7 +80,7 @@ _root_runner:
 _rpi: _buildctx
 	@ ./tools/say "===== Building rootfs ====="
 	rm -f $(_BUILDED_IMAGE)
-	docker build $(RPI_OPTS) \
+	docker build $(BUILD_OPTS) \
 			--build-arg "QEMU_ARM_STATIC_PLACE=$(QEMU_ARM_STATIC_PLACE)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
