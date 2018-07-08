@@ -33,6 +33,7 @@ RUN pacman --noconfirm -S \
 		wget \
 		unzip \
 		htop \
+		nmap \
 		iftop \
 		iotop \
 		strace \
@@ -64,6 +65,8 @@ RUN useradd -r -d / packer \
 		/usr/local/bin/user-packer \
 	&& cd - \
 	&& rm -rf /tmp/packer-color
+
+RUN echo "LLMNR=no" >> /etc/systemd/resolved.conf
 
 COPY stages/os/pkg-install /usr/local/bin/
 COPY stages/os/setup-profile /usr/local/bin/
