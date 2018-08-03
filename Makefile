@@ -49,13 +49,15 @@ all:
 rpi: binfmt
 	make _rpi \
 		PLATFORM=rpi \
-		STAGES="__init__ os ssh watchdog ro __cleanup__"
+		BUILD_OPTS="--build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
+		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
 
 rpi2: binfmt
 	make _rpi \
 		PLATFORM=rpi-2 \
-		STAGES="__init__ os ssh watchdog ro __cleanup__"
+		BUILD_OPTS="--build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
+		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
 
 shell: binfmt

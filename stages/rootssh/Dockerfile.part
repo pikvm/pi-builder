@@ -1,0 +1,16 @@
+RUN userdel -r -f alarm
+
+COPY stages/rootssh/pubkeys pubkeys
+RUN mkdir -p /root/.ssh \
+	&& chmod 700 /root/.ssh \
+	&& cat pubkeys/*.pub > /root/.ssh/authorized_keys \
+	&& chmod 600 /root/.ssh/authorized_keys \
+	&& rm -rf pubkeys
+
+RUN passwd -l root \
+	&& echo "PasswordAuthentication no" >> "/etc/ssh/sshd_config"
+
+ARG NEW_SSH_KEYGEN
+ENV NEW_SSH_KEYGEN $NEW_SSH_KEYGEN
+RUN echo $NEW_SSH_KEYGEN
+RUN ssh-keygen -A

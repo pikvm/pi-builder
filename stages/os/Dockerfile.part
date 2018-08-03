@@ -1,5 +1,3 @@
-RUN userdel -r -f alarm
-
 # https://lists.gnu.org/archive/html/qemu-devel/2017-10/msg03681.html
 RUN echo "$LOCALE UTF-8" > /etc/locale.gen \
 	&& locale-gen en_US.UTF-8
