@@ -63,6 +63,8 @@ RUN useradd -r -d / packer \
 		/usr/local/bin/user-packer \
 	&& sed -i -e "s|makepkg \$MAKEPKGOPTS --asroot -f|sudo -u packer makepkg \$MAKEPKGOPTS -f|g" \
 		/usr/local/bin/user-packer \
+	&& sed -i -e "s/echo \"The build failed\.\" && return 1/err \"The build failed.\"/g" \
+		/usr/local/bin/user-packer \
 	&& cd - \
 	&& rm -rf /tmp/packer-color
 
