@@ -79,12 +79,32 @@ rpi2: binfmt
 * `ro` - превращает систему в read-only-ось. В таком режиме Raspberry Pi можно просто выключать из розетки без предварительной подготовки, не боясь потери данных или коррапта файловой системы. Для того, чтобы временно включить систему на запись (чтобы поставить пакеты, например), используйте команду `rw`, после всех изменений выполните команду `ro` для обратного перемонтирования в read-only.
 * `watchdog` - настраивает аппаратный вачдог, никакой магии.
 * `rootssh` - удаляет пользователя `alarm`, блокирует пароль `root` и добавляет в его `/root/.ssh/authorized_keys` ключи из каталога [stages/rootssh/pubkeys]. По умолчанию там лежат ключи разработчика pi-builder :D Кроме того, при в `BUILD_OPTS` параметра `--build-arg NEW_SSH_KEYGEN=$(shell uuidgen)`, на этом стейдже будет всегда происходить пересборка системы, поскольку в конце него выполняется команда `ssh-keygen` для генерирования уникальных хостовых ключей. В обычной ситуации ее ручной запуск не требуется, но если система загружается в read-only, у SSH нет возможности сгенерировать ключи самостоятельно даже при первой загрузке.
+* `__cleanup__` - удаляет всякий мусор во временных папках, оставшийся от сборки.
 
 ### TL;DR
 Как собрать систему и поставить ее на флешку:
 ```shell
 $ make rpi2
 $ make install
+```
+
+Как собрать систему со своим списком стейджей:
+```shell
+$ make _rpi PLATFORM=rpi-2 STAGES="__init__ os __cleanup__"
+```
+
+Остальные команды можно посмотреть так:
+```shell
+$ make
+Available commands:
+    make           # Print this help
+    make rpi|rpi2  # Build Arch-ARM rootfs
+    make shell     # Run Arch-ARM shell
+    make binfmt    # Before build
+    make scan      # Find all RPi devices in the local network
+    make clean     # Remove the generated rootfs
+    make format    # Format /dev/mmcblk0 to /dev/mmcblk0p1 (vfat), /dev/mmcblk0p2 (ext4)
+    make install   # Install rootfs to partitions on /dev/mmcblk0
 ```
 
 * **Важно**: проверьте в Makefile путь к SD-карте в переменных `CARD*`.
