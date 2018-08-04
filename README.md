@@ -82,8 +82,10 @@ rpi2: binfmt
 * `__cleanup__` - удаляет всякий мусор во временных папках, оставшийся от сборки.
 
 ### TL;DR
-Как собрать систему и поставить ее на флешку:
+Как собрать систему и поставить ее на SD-карту:
 ```shell
+$ git clone https://github.com/pi-kvm/pi-builder
+$ cd pi-builder
 $ make rpi2
 $ make install
 ```
