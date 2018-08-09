@@ -45,7 +45,7 @@ CARD ?= /dev/mmcblk0  # Путь к вашей SD-карте, на нее буд
 CARD_BOOT ?= $(CARD)p1  # Раздел для /boot
 CARD_ROOT ?= $(CARD)p2  # Раздел для /
 
-PLATFORM ?= rpi  # Целевая платформа для Raspberry Pi; rpi-2 для Raspberry Pi 2
+BOARD ?= rpi  # Целевая платформа Raspberry Pi; rpi-2 для Raspberry Pi 2
 STAGES ?= __init__  # Список необходимых стейджей, об этом подробнее ниже
 
 PROJECT ?= common  # Пространство имен для промежуточных образов, просто назовите как нравится
@@ -57,13 +57,13 @@ TIMEZONE ?= Europe/Moscow  # Таймзона будущей системы
 REPO_URL ?= http://mirror.yandex.ru/archlinux-arm  # Зеркало пакетов и всего загружаемого контента
 ```
 
-Самые важные параметры - это `PLATFORM`, определяющий, под какую плату нужно собрать систему, `STAGES`, указывающий, какие стейджи необходимо включить и `CARD*`.
+Самые важные параметры - это `BOARD`, определяющий, под какую плату нужно собрать систему, `STAGES`, указывающий, какие стейджи необходимо включить и `CARD*`.
 
 Например, вот так выглядит сборка системы с ридонли-корнем и вачдогом (выдержка из Makefile). Ее можно активировать с помощью команды `make rpi2`:
 ```Makefile
 rpi2: binfmt
 	make _rpi \
-		PLATFORM=rpi-2 \
+		BOARD=rpi-2 \
 		BUILD_OPTS="--build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 ```
@@ -91,7 +91,7 @@ $ make install
 
 Как собрать систему со своим списком стейджей:
 ```shell
-$ make _rpi PLATFORM=rpi-2 STAGES="__init__ os __cleanup__"
+$ make _rpi BOARD=rpi-2 STAGES="__init__ os __cleanup__"
 ```
 
 Остальные команды можно посмотреть так:

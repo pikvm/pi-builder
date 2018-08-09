@@ -2,7 +2,7 @@ CARD ?= /dev/mmcblk0
 CARD_BOOT ?= $(CARD)p1
 CARD_ROOT ?= $(CARD)p2
 
-PLATFORM ?= rpi
+BOARD ?= rpi
 STAGES ?= __init__
 
 PROJECT ?= common
@@ -27,8 +27,8 @@ _IMAGES_PREFIX = pi-builder
 _ROOT_RUNNER = $(_IMAGES_PREFIX)-root-runner
 
 _RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs.tar.gz
-_RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(PLATFORM)
-_RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(PLATFORM)
+_RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(BOARD)
+_RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
 _RPI_RESULT_ROOTFS_TAR = $(_TMP_DIR)/result-rootfs.tar
 _RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
 
@@ -48,14 +48,14 @@ all:
 
 rpi: binfmt
 	make _rpi \
-		PLATFORM=rpi \
+		BOARD=rpi \
 		BUILD_OPTS="--build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
 
 rpi2: binfmt
 	make _rpi \
-		PLATFORM=rpi-2 \
+		BOARD=rpi-2 \
 		BUILD_OPTS="--build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
@@ -109,7 +109,7 @@ _buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_ARM_STATIC)
 $(_RPI_BASE_ROOTFS_TGZ):
 	mkdir -p $(_TMP_DIR)
 	@ ./tools/say "===== Fetching base rootfs ====="
-	curl -L -f $(REPO_URL)/os/ArchLinuxARM-$(PLATFORM)-latest.tar.gz -z $@ -o $@
+	curl -L -f $(REPO_URL)/os/ArchLinuxARM-$(BOARD)-latest.tar.gz -z $@ -o $@
 
 
 $(_QEMU_ARM_STATIC):
