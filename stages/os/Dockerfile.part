@@ -51,22 +51,17 @@ RUN pacman --noconfirm -S \
 		sudo \
 	&& pacman --noconfirm -Sc
 
-RUN useradd -r -d / packer \
+RUN useradd pacman -rd /var/empty \
 	&& cd /tmp \
-	&& sudo -u packer git clone https://aur.archlinux.org/packer-color.git \
-	&& cd packer-color \
-	&& sudo -u packer makepkg \
-	&& pacman --noconfirm -U packer-color-*.pkg.tar.xz \
-	&& ln -s /usr/bin/packer-color /usr/local/bin/packer \
-	&& cp /usr/bin/packer-color /usr/local/bin/user-packer \
-	&& sed -i -e "s|makepkg \$MAKEPKGOPTS |chown -R packer:packer \$dir; makepkg \$MAKEPKGOPTS |g" \
-		/usr/local/bin/user-packer \
-	&& sed -i -e "s|makepkg \$MAKEPKGOPTS --asroot -f|sudo -u packer makepkg \$MAKEPKGOPTS -f|g" \
-		/usr/local/bin/user-packer \
+	&& sudo -u pacman git clone https://aur.archlinux.org/packer-git.git \
+	&& cd packer-git \
+	&& sudo -u pacman makepkg \
+	&& pacman --noconfirm -U packer-git-*.pkg.tar.xz \
+	&& cp /usr/bin/packer /usr/local/bin/user-packer \
 	&& sed -i -e "s/echo \"The build failed\.\" && return 1/err \"The build failed.\"/g" \
 		/usr/local/bin/user-packer \
 	&& cd - \
-	&& rm -rf /tmp/packer-color
+	&& rm -rf /tmp/packer-git
 
 RUN echo "LLMNR=no" >> /etc/systemd/resolved.conf
 
