@@ -17,6 +17,7 @@ RUN pacman --noconfirm -Syy \
 	&& pacman-db-upgrade \
 	&& pacman --noconfirm -Syu \
 	&& pacman --noconfirm -S \
+		p11-kit \
 		archlinux-keyring \
 		ca-certificates \
 		ca-certificates-cacert \
