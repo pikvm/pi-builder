@@ -23,9 +23,7 @@ RUN pacman --noconfirm -Syy \
 		ca-certificates-cacert \
 		ca-certificates-mozilla \
 		ca-certificates-utils \
-	&& pacman --noconfirm -Sc
-
-RUN pacman --noconfirm -S \
+	&& pacman --noconfirm -S \
 		vim \
 		colordiff \
 		tree \
