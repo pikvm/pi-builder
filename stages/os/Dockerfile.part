@@ -49,6 +49,8 @@ RUN pacman --noconfirm -S \
 		pyalpm \
 		expac \
 		sudo \
+		linux-raspberrypi \
+		linux-raspberrypi-headers \
 	&& pacman --noconfirm -Sc
 
 RUN useradd pacman -rd /var/empty \
