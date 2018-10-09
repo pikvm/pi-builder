@@ -59,9 +59,9 @@ REPO_URL ?= http://mirror.yandex.ru/archlinux-arm  # Зеркало пакето
 
 Самые важные параметры - это `BOARD`, определяющий, под какую плату нужно собрать систему, `STAGES`, указывающий, какие стейджи необходимо включить и `CARD*`.
 
-Например, вот так выглядит сборка системы с ридонли-корнем и вачдогом (выдержка из Makefile). Ее можно активировать с помощью команды `make rpi2`:
+Например, вот так выглядит сборка системы с ридонли-корнем и вачдогом (выдержка из Makefile). Ее можно активировать с помощью команды `make rpi-2`:
 ```Makefile
-rpi2: binfmt
+rpi-2: binfmt
 	make _rpi \
 		BOARD=rpi-2 \
 		BUILD_OPTS="--build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
@@ -85,7 +85,7 @@ rpi2: binfmt
 ```shell
 $ git clone https://github.com/pi-kvm/pi-builder
 $ cd pi-builder
-$ make rpi2
+$ make rpi-2
 $ make install
 ```
 
@@ -98,14 +98,14 @@ $ make _rpi BOARD=rpi-2 STAGES="__init__ os __cleanup__"
 ```shell
 $ make
 Available commands:
-    make           # Print this help
-    make rpi|rpi2  # Build Arch-ARM rootfs
-    make shell     # Run Arch-ARM shell
-    make binfmt    # Before build
-    make scan      # Find all RPi devices in the local network
-    make clean     # Remove the generated rootfs
-    make format    # Format /dev/mmcblk0 to /dev/mmcblk0p1 (vfat), /dev/mmcblk0p2 (ext4)
-    make install   # Install rootfs to partitions on /dev/mmcblk0
+    make                  # Print this help
+    make rpi|rpi-2|rpi-3  # Build Arch-ARM rootfs
+    make shell            # Run Arch-ARM shell
+    make binfmt           # Before build
+    make scan             # Find all RPi devices in the local network
+    make clean            # Remove the generated rootfs
+    make format           # Format /dev/mmcblk0 to /dev/mmcblk0p1 (vfat), /dev/mmcblk0p2 (ext4)
+    make install          # Install rootfs to partitions on /dev/mmcblk0
 ```
 
 * **Важно**: проверьте в Makefile путь к SD-карте в переменных `CARD*`.

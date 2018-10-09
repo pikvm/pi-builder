@@ -36,14 +36,14 @@ _RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
 # =====
 all:
 	@ echo "Available commands:"
-	@ echo "    make           # Print this help"
-	@ echo "    make rpi|rpi2  # Build Arch-ARM rootfs"
-	@ echo "    make shell     # Run Arch-ARM shell"
-	@ echo "    make binfmt    # Before build"
-	@ echo "    make scan      # Find all RPi devices in the local network"
-	@ echo "    make clean     # Remove the generated rootfs"
-	@ echo "    make format    # Format $(CARD) to $(CARD_BOOT) (vfat), $(CARD_ROOT) (ext4)"
-	@ echo "    make install   # Install rootfs to partitions on $(CARD)"
+	@ echo "    make                  # Print this help"
+	@ echo "    make rpi|rpi-2|rpi-3  # Build Arch-ARM rootfs"
+	@ echo "    make shell            # Run Arch-ARM shell"
+	@ echo "    make binfmt           # Before build"
+	@ echo "    make scan             # Find all RPi devices in the local network"
+	@ echo "    make clean            # Remove the generated rootfs"
+	@ echo "    make format           # Format $(CARD) to $(CARD_BOOT) (vfat), $(CARD_ROOT) (ext4)"
+	@ echo "    make install          # Install rootfs to partitions on $(CARD)"
 
 
 rpi: binfmt
@@ -53,9 +53,16 @@ rpi: binfmt
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
 
-rpi2: binfmt
+rpi-2: binfmt
 	make _rpi \
 		BOARD=rpi-2 \
+		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
+		STAGES="__init__ os watchdog ro rootssh __cleanup__"
+
+
+rpi-3: binfmt
+	make _rpi \
+		BOARD=rpi-3 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
