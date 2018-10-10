@@ -26,7 +26,7 @@ _IMAGES_PREFIX = pi-builder
 
 _ROOT_RUNNER = $(_IMAGES_PREFIX)-root-runner
 
-_RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs.tar.gz
+_RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs-$(BOARD).tar.gz
 _RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(BOARD)
 _RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
 _RPI_RESULT_ROOTFS_TAR = $(_TMP_DIR)/result-rootfs.tar
@@ -90,6 +90,8 @@ _rpi: _buildctx
 	@ ./tools/say "===== Building rootfs ====="
 	rm -f $(_BUILDED_IMAGE)
 	docker build $(BUILD_OPTS) \
+			--build-arg "BOARD=$(BOARD)" \
+			--build-arg "BASE_ROOTFS_TGZ=`basename $(_RPI_BASE_ROOTFS_TGZ)`" \
 			--build-arg "QEMU_ARM_STATIC_PLACE=$(QEMU_ARM_STATIC_PLACE)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
