@@ -7,7 +7,6 @@ STAGES ?= __init__
 
 PROJECT ?= common
 BUILD_OPTS ?=
-QEMU_ARM_STATIC_PLACE ?= /usr/bin/qemu-arm-static
 HOSTNAME ?= pi
 LOCALE ?= en_US.UTF-8
 TIMEZONE ?= Europe/Moscow
@@ -19,8 +18,27 @@ _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
 _BUILDED_IMAGE = ./.builded_image
 
+ifeq ($(BOARD), rpi)
+ _QEMU_RUNNER_ARCH = arm
+ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-latest.tar.gz
+
+else ifeq ($(BOARD), rpi2)
+ _QEMU_RUNNER_ARCH = arm
+ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
+
+else ifeq ($(BOARD), rpi3)
+ _QEMU_RUNNER_ARCH = arm
+ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
+
+else ifeq ($(BOARD), rpi3-x64)
+ _QEMU_RUNNER_ARCH = aarch64
+ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-3-latest.tar.gz
+
+endif
+
 _QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
-_QEMU_ARM_STATIC = $(_TMP_DIR)/qemu-arm-static
+_QEMU_RUNNER_STATIC = $(_TMP_DIR)/qemu-$(_QEMU_RUNNER_ARCH)-static
+_QEMU_RUNNER_STATIC_PLACE ?= /usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
 
 _IMAGES_PREFIX = pi-builder
 
@@ -36,44 +54,44 @@ _RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
 # =====
 all:
 	@ echo "Available commands:"
-	@ echo "    make                  # Print this help"
-	@ echo "    make rpi|rpi-2|rpi-3  # Build Arch-ARM rootfs"
-	@ echo "    make shell            # Run Arch-ARM shell"
-	@ echo "    make binfmt           # Before build"
-	@ echo "    make scan             # Find all RPi devices in the local network"
-	@ echo "    make clean            # Remove the generated rootfs"
-	@ echo "    make format           # Format $(CARD) to $(CARD_BOOT) (vfat), $(CARD_ROOT) (ext4)"
-	@ echo "    make install          # Install rootfs to partitions on $(CARD)"
+	@ echo "    make                # Print this help"
+	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs"
+	@ echo "    make shell          # Run Arch-ARM shell"
+	@ echo "    make binfmt         # Before build"
+	@ echo "    make scan           # Find all RPi devices in the local network"
+	@ echo "    make clean          # Remove the generated rootfs"
+	@ echo "    make format         # Format $(CARD) to $(CARD_BOOT) (vfat), $(CARD_ROOT) (ext4)"
+	@ echo "    make install        # Install rootfs to partitions on $(CARD)"
 
 
-rpi: binfmt
-	make _rpi \
+rpi:
+	make binfmt os \
 		BOARD=rpi \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
 
-rpi-2: binfmt
-	make _rpi \
-		BOARD=rpi-2 \
+rpi2:
+	make binfmt os \
+		BOARD=rpi2 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
 
-rpi-3: binfmt
-	make _rpi \
-		BOARD=rpi-3 \
+rpi3:
+	make binfmt os \
+		BOARD=rpi3 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 		STAGES="__init__ os watchdog ro rootssh __cleanup__"
 
 
-shell: binfmt
+shell:
 	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
 	docker run --rm -it `cat $(_BUILDED_IMAGE)` /bin/bash
 
 
 binfmt: _root_runner
-	docker run --privileged --rm -it $(_ROOT_RUNNER) install-binfmt $(QEMU_ARM_STATIC_PLACE)
+	docker run --privileged --rm -it $(_ROOT_RUNNER) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
 
 
 scan: _root_runner
@@ -81,18 +99,14 @@ scan: _root_runner
 	docker run --net=host --rm -it $(_ROOT_RUNNER) arp-scan --localnet | grep b8:27:eb: || true
 
 
-# =====
-_root_runner:
-	docker build --rm --tag $(_ROOT_RUNNER) tools -f tools/Dockerfile.root
-
-
-_rpi: _buildctx
+os: _buildctx
 	@ ./tools/say "===== Building rootfs ====="
 	rm -f $(_BUILDED_IMAGE)
 	docker build $(BUILD_OPTS) \
 			--build-arg "BOARD=$(BOARD)" \
 			--build-arg "BASE_ROOTFS_TGZ=`basename $(_RPI_BASE_ROOTFS_TGZ)`" \
-			--build-arg "QEMU_ARM_STATIC_PLACE=$(QEMU_ARM_STATIC_PLACE)" \
+			--build-arg "QEMU_RUNNER_ARCH=$(_QEMU_RUNNER_ARCH)" \
+			--build-arg "QEMU_RUNNER_STATIC_PLACE=$(_QEMU_RUNNER_STATIC_PLACE)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
@@ -101,12 +115,17 @@ _rpi: _buildctx
 	@ ./tools/say "===== Build complete ====="
 
 
-_buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_ARM_STATIC)
+# =====
+_root_runner:
+	docker build --rm --tag $(_ROOT_RUNNER) tools -f tools/Dockerfile.root
+
+
+_buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_RUNNER_STATIC)
 	@ ./tools/say "===== Assembling Dockerfile ====="
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
 	cp $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)
-	cp $(_QEMU_ARM_STATIC) $(_BUILD_DIR)
+	cp $(_QEMU_RUNNER_STATIC) $(_BUILD_DIR)
 	cp -r tools/{say,die} $(_BUILD_DIR)
 	cp -r stages $(_BUILD_DIR)
 	echo -n > $(_BUILD_DIR)/Dockerfile
@@ -118,10 +137,10 @@ _buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_ARM_STATIC)
 $(_RPI_BASE_ROOTFS_TGZ):
 	mkdir -p $(_TMP_DIR)
 	@ ./tools/say "===== Fetching base rootfs ====="
-	curl -L -f $(REPO_URL)/os/ArchLinuxARM-$(BOARD)-latest.tar.gz -z $@ -o $@
+	curl -L -f $(_RPI_ROOTFS_URL) -z $@ -o $@
 
 
-$(_QEMU_ARM_STATIC):
+$(_QEMU_RUNNER_STATIC):
 	mkdir -p $(_TMP_DIR)
 	@ ./tools/say "===== QEMU magic ====="
 	mkdir -p $(_TMP_DIR)/qemu-user-static-deb
@@ -135,7 +154,7 @@ $(_QEMU_ARM_STATIC):
 	cd $(_TMP_DIR)/qemu-user-static-deb \
 	&& ar vx qemu-user-static.deb \
 	&& tar -xJf data.tar.xz
-	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $@
+	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static $@
 
 
 # =====
@@ -181,8 +200,6 @@ extract: _root_runner
 	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	$(__DOCKER_RUN_TMP) bash -c " \
 		echo $(HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
-		&& mv $(_RPI_RESULT_ROOTFS)/$(QEMU_ARM_STATIC_PLACE) $(_RPI_RESULT_ROOTFS)/usr/local/bin \
-		&& ln -sf $(QEMU_ARM_STATIC_PLACE) $(_RPI_RESULT_ROOTFS)/usr/local/bin/qemu-arm-static \
 	"
 	@ ./tools/say "===== Extraction complete ====="
 

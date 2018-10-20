@@ -12,7 +12,16 @@ RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 	&& pacman-key --init \
 	&& pacman-key --populate archlinuxarm
 
-RUN pacman --noconfirm -Syy \
+
+RUN (if [[ "$BOARD" == "rpi" || "$BOARD" == "rpi2" || "$BOARD" == "rpi3" ]]; then \
+		kernel="linux-raspberrypi linux-raspberrypi-headers"; \
+	elif [ "$BOARD" == "rpi3-x64" ]; then \
+		kernel="linux-aarch64 linux-aarch64-headers uboot-tools"; \
+	else \
+		echo "Unknown board: $BOARD"; \
+		exit 1; \
+	fi) \
+	&& pacman --noconfirm -Syy \
 	&& pacman --noconfirm -S pacman \
 	&& pacman-db-upgrade \
 	&& pacman --noconfirm -Syu \
@@ -46,8 +55,7 @@ RUN pacman --noconfirm -Syy \
 		pyalpm \
 		expac \
 		sudo \
-		linux-raspberrypi \
-		linux-raspberrypi-headers \
+		$kernel \
 	&& pacman --noconfirm -Sc
 
 RUN useradd pacman -rd /var/empty \
