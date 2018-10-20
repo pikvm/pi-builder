@@ -1,14 +1,16 @@
 # Based on https://gist.github.com/yeokm1/8b0ffc03e622ce011010
 
-RUN (if [[ "$BOARD" == "rpi" || "$BOARD" == "rpi2" || "$BOARD" == "rpi3" ]]; then \
-		sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt; \
-	elif [ "$BOARD" == "rpi3-x64" ]; then \
-		sed -i -e "s| \<rw\> | ro |g" /boot/boot.txt; \
-		/boot/mkscr; \
-	else \
-		echo "Unknown board: $BOARD"; \
-		exit 1; \
-	fi)
+RUN ( \
+		if [[ "$BOARD" == "rpi" || "$BOARD" == "rpi2" || "$BOARD" == "rpi3" ]]; then \
+			sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt; \
+		elif [ "$BOARD" == "rpi3-x64" ]; then \
+			sed -i -e "s| \<rw\> | ro |g" /boot/boot.txt; \
+			/boot/mkscr; \
+		else \
+			echo "Unknown board: $BOARD"; \
+			exit 1; \
+		fi \
+	)
 
 RUN mkdir -p /var/lib/private \
 	&& chmod 700 /var/lib/private

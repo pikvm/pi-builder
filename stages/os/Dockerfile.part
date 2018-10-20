@@ -13,15 +13,7 @@ RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 	&& pacman-key --populate archlinuxarm
 
 
-RUN (if [[ "$BOARD" == "rpi" || "$BOARD" == "rpi2" || "$BOARD" == "rpi3" ]]; then \
-		kernel="linux-raspberrypi linux-raspberrypi-headers"; \
-	elif [ "$BOARD" == "rpi3-x64" ]; then \
-		kernel="linux-aarch64 linux-aarch64-headers uboot-tools"; \
-	else \
-		echo "Unknown board: $BOARD"; \
-		exit 1; \
-	fi) \
-	&& pacman --noconfirm -Syy \
+RUN pacman --noconfirm -Syy \
 	&& pacman --noconfirm -S pacman \
 	&& pacman-db-upgrade \
 	&& pacman --noconfirm -Syu \
@@ -55,7 +47,16 @@ RUN (if [[ "$BOARD" == "rpi" || "$BOARD" == "rpi2" || "$BOARD" == "rpi3" ]]; the
 		pyalpm \
 		expac \
 		sudo \
-		$kernel \
+	&& ( \
+		if [[ "$BOARD" == "rpi" || "$BOARD" == "rpi2" || "$BOARD" == "rpi3" ]]; then \
+			pacman --noconfirm -S linux-raspberrypi linux-raspberrypi-headers; \
+		elif [ "$BOARD" == "rpi3-x64" ]; then \
+			pacman --noconfirm -S linux-aarch64 linux-aarch64-headers uboot-tools; \
+		else \
+			echo "Unknown board: $BOARD"; \
+			exit 1; \
+		fi \
+	) \
 	&& pacman --noconfirm -Sc
 
 RUN useradd pacman -rd /var/empty \
