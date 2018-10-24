@@ -184,13 +184,21 @@ format: _root_runner
 	@ ./tools/say "===== Formatting $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
-		set -e \
+		&& set -e \
 		&& dd if=/dev/zero of=$(CARD) bs=512 count=1 \
 		&& partprobe $(CARD) \
+	"
+	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
+		set -x \
+		&& set -e \
 		&& parted $(CARD) -s mklabel msdos \
 		&& parted $(CARD) -a optimal -s mkpart primary fat32 0% 128MiB \
 		&& parted $(CARD) -s mkpart primary 128MiB 100% \
 		&& partprobe $(CARD) \
+	"
+	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
+		set -x \
+		&& set -e \
 		&& mkfs.vfat $(CARD_BOOT) \
 		&& yes | mkfs.ext4 $(CARD_ROOT) \
 	"
