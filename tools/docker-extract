@@ -56,9 +56,22 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
                 members = layer_tar.getmembers()
 
                 for member in members:
+                    # https://github.com/moby/moby/blob/8e610b2b55bfd1bfa9436ab110d311f5e8a74dcb/pkg/archive/whiteouts.go
+                    # https://github.com/moby/moby/blob/8e610b2b55bfd1bfa9436ab110d311f5e8a74dcb/pkg/archive/diff.go
+                    # https://github.com/sylabs/singularity/blob/8a0e3008b29db85d1e23677d98978cafba1fdbe7/src/docker-extract.c#L21
+
                     member_path = os.path.join(root_path, member.path)
                     assert not member_path.startswith(".wh."), member_path
-                    if "/.wh." in member_path:
+
+                    if member_path.endswith("/.wh..wh..opq"):
+                        whiteout = os.path.dirname(member_path)
+                        _logger.debug("::    Removing opaque: %s", whiteout)
+                        try:
+                            shutil.rmtree(whiteout)
+                        except FileNotFoundError:
+                            pass
+
+                    elif "/.wh." in member_path:
                         whiteout = member_path.replace("/.wh.", "/")
                         if os.path.isdir(whiteout):
                             _logger.debug("::    Removing whiteout dir: %s", whiteout)
