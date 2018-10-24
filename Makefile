@@ -68,21 +68,21 @@ rpi:
 	make binfmt os \
 		BOARD=rpi \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
-		STAGES="__init__ os watchdog ro rootssh __cleanup__"
+		STAGES="__init__ os watchdog ro rootssh sshkeygen __cleanup__"
 
 
 rpi2:
 	make binfmt os \
 		BOARD=rpi2 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
-		STAGES="__init__ os watchdog ro rootssh __cleanup__"
+		STAGES="__init__ os watchdog ro rootssh sshkeygen __cleanup__"
 
 
 rpi3:
 	make binfmt os \
 		BOARD=rpi3 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
-		STAGES="__init__ os watchdog ro rootssh __cleanup__"
+		STAGES="__init__ os watchdog ro rootssh sshkeygen __cleanup__"
 
 
 shell:
