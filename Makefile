@@ -126,7 +126,7 @@ _buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_RUNNER_STATIC)
 	mkdir -p $(_BUILD_DIR)
 	cp $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)
 	cp $(_QEMU_RUNNER_STATIC) $(_BUILD_DIR)
-	cp -r tools/{say,die} $(_BUILD_DIR)
+	cp -r tools/say tools/die $(_BUILD_DIR)
 	cp -r stages $(_BUILD_DIR)
 	echo -n > $(_BUILD_DIR)/Dockerfile
 	for stage in $(STAGES); do \
