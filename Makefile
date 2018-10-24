@@ -183,7 +183,13 @@ format: _root_runner
 	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
 	@ ./tools/say "===== Formatting $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
-		(echo -e "o\nn\np\n1\n\n+128M\nt\nc\nn\np\n2\n\n\nw\n" | fdisk $(CARD) || true) \
+		set -x \
+		set -e \
+		&& dd if=/dev/zero of=$(CARD) bs=512 count=1 \
+		&& partprobe $(CARD) \
+		&& parted $(CARD) -s mklabel msdos \
+		&& parted $(CARD) -a optimal -s mkpart primary fat32 0% 128MiB \
+		&& parted $(CARD) -s mkpart primary 128MiB 100% \
 		&& partprobe $(CARD) \
 		&& mkfs.vfat $(CARD_BOOT) \
 		&& yes | mkfs.ext4 $(CARD_ROOT) \
