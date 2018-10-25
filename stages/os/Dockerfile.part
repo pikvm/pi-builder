@@ -25,6 +25,7 @@ RUN pacman --noconfirm -Syy \
 		ca-certificates-utils \
 	&& pacman --noconfirm -S \
 		vim \
+		vimpager \
 		colordiff \
 		tree \
 		wget \
@@ -75,8 +76,8 @@ RUN echo "LLMNR=no" >> /etc/systemd/resolved.conf
 
 RUN mkdir /tmp/linux-profile \
 	&& git clone https://github.com/mdevaev/linux-profile.git /tmp/linux-profile --depth=1 \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vim} /etc/skel \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vim} /root \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vimpagerrc,.vim} /etc/skel \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vimpagerrc,.vim} /root \
 	&& rm -rf /tmp/linux-profile
 
 COPY stages/os/pkg-install /usr/local/bin/
