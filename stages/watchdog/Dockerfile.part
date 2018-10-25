@@ -1,7 +1,5 @@
 RUN pkg-install watchdog
 
-COPY stages/watchdog/modules-load.d.conf /etc/modules-load.d/watchdog.conf
-COPY stages/watchdog/modprobe.d.conf /etc/modprobe.d/watchdog.conf
 COPY stages/watchdog/watchdog.conf /etc/watchdog.conf
 
 RUN systemctl enable watchdog
