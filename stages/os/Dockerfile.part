@@ -74,12 +74,15 @@ RUN useradd pacman -rd /var/empty \
 
 RUN echo "LLMNR=no" >> /etc/systemd/resolved.conf
 
+COPY stages/os/gitconfig /etc/skel/.gitconfig
+COPY stages/os/gitconfig /root/.gitconfig
+COPY stages/os/gitconfig /home/alarm/.gitconfig
 RUN mkdir /tmp/linux-profile \
 	&& git clone https://github.com/mdevaev/linux-profile.git /tmp/linux-profile --depth=1 \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vimpagerrc,.vim} /etc/skel \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vimpagerrc,.vim} /root \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vimpagerrc,.vim} /home/alarm \
-	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.gitconfig,.vimrc,.vimpagerrc,.vim} \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim} /etc/skel \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim} /root \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim} /home/alarm \
+	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim,.gitconfig} \
 	&& rm -rf /tmp/linux-profile
 
 COPY stages/os/pkg-install /usr/local/bin/
