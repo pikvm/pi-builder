@@ -26,7 +26,6 @@ RUN pacman --noconfirm -Syy \
 		ca-certificates-utils \
 	&& pacman --noconfirm -S \
 		vim \
-		vimpager \
 		colordiff \
 		tree \
 		wget \
