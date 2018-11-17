@@ -18,6 +18,7 @@ RUN mkdir -p /var/lib/private \
 COPY stages/ro/fstab /etc/
 COPY stages/ro/ro /usr/local/bin/
 COPY stages/ro/rw /usr/local/bin/
+COPY stages/ro/journald.conf /etc/systemd/
 ADD stages/ro/logrotate.override /etc/systemd/system/logrotate.service.d/override.conf
 
 RUN systemctl disable systemd-random-seed \
