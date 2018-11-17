@@ -1,7 +1,8 @@
 # https://lists.gnu.org/archive/html/qemu-devel/2017-10/msg03681.html
-RUN echo "$LOCALE UTF-8" > /etc/locale.gen \
-	&& locale-gen en_US.UTF-8
-ENV LC_ALL $LOCALE
+RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
+	&& ( [ "$LOCALE" == "en_US" ] || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen ) \
+	&& locale-gen
+ENV LC_ALL $LOCALE.UTF-8
 
 RUN rm -f /etc/localtime \
 	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime

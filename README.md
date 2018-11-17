@@ -52,7 +52,7 @@ PROJECT ?= common  # Пространство имен для промежуто
 BUILD_OPTS ?=  # Всякие дополнительные опции для docker build
 QEMU_ARM_STATIC_PLACE ?= /usr/bin/qemu-arm-static  # Путь к qemu-arm-static ВНУТРИ КОНТЕЙНЕРА
 HOSTNAME ?= pi  # Имя хоста для получившейся системы
-LOCALE ?= en_US.UTF-8  # Локаль будущей системы
+LOCALE ?= en_US  # Локаль будущей системы (UTF-8)
 TIMEZONE ?= Europe/Moscow  # Таймзона будущей системы
 REPO_URL ?= http://mirror.yandex.ru/archlinux-arm  # Зеркало пакетов и всего загружаемого контента
 ```

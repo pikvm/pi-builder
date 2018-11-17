@@ -8,7 +8,7 @@ STAGES ?= __init__
 PROJECT ?= common
 BUILD_OPTS ?=
 HOSTNAME ?= pi
-LOCALE ?= en_US.UTF-8
+LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
 REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
 
