@@ -7,4 +7,3 @@
 
 [core]
 	editor = vim
-	pager = vimpager
