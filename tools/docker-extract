@@ -92,7 +92,7 @@ def _patch_os_symlink() -> None:
     orig_os_symlink = os.symlink
 
     def rewrite_symlink(src: str, dest: str) -> None:
-        if os.path.islink(dest):
+        if os.path.exists(dest):
             os.unlink(dest)
         orig_os_symlink(src, dest)
 
