@@ -15,7 +15,9 @@ RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 
 
 RUN pacman --noconfirm -Syy \
-	&& pacman --noconfirm -S pacman \
+	&& pacman --noconfirm -S \
+		glibc \
+		pacman \
 	&& pacman-db-upgrade \
 	&& pacman --noconfirm -Syu \
 	&& pacman --noconfirm -S \
