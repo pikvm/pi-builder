@@ -1,16 +1,16 @@
-CARD ?= /dev/mmcblk0
-CARD_BOOT ?= $(CARD)p1
-CARD_ROOT ?= $(CARD)p2
-
-BOARD ?= rpi
-STAGES ?= __init__
+-include config.mk
 
 PROJECT ?= common
-BUILD_OPTS ?=
+BOARD ?= rpi
+STAGES ?= __init__ os watchdog ro rootssh sshkeygen __cleanup__
+
 HOSTNAME ?= pi
 LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
 REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
+BUILD_OPTS ?=
+
+CARD ?= /dev/mmcblk0
 
 
 # =====
@@ -19,21 +19,17 @@ _BUILD_DIR = ./.build
 _BUILDED_IMAGE = ./.builded_image
 
 ifeq ($(BOARD), rpi)
- _QEMU_RUNNER_ARCH = arm
- _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-latest.tar.gz
-
+	_QEMU_RUNNER_ARCH = arm
+	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-latest.tar.gz
 else ifeq ($(BOARD), rpi2)
- _QEMU_RUNNER_ARCH = arm
- _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
-
+	_QEMU_RUNNER_ARCH = arm
+	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
 else ifeq ($(BOARD), rpi3)
- _QEMU_RUNNER_ARCH = arm
- _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
-
+	_QEMU_RUNNER_ARCH = arm
+	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
 else ifeq ($(BOARD), rpi3-x64)
- _QEMU_RUNNER_ARCH = aarch64
- _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-3-latest.tar.gz
-
+	_QEMU_RUNNER_ARCH = aarch64
+	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-3-latest.tar.gz
 endif
 
 _QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
@@ -50,43 +46,74 @@ _RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
 _RPI_RESULT_ROOTFS_TAR = $(_TMP_DIR)/result-rootfs.tar
 _RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
 
+ifeq ($(findstring mmcblk, $(CARD)), mmcblk)
+	_CARD_P = p
+else ifeq ($(findstring loop, $(CARD)), loop)
+	_CARD_P = p
+endif
+_CARD_BOOT ?= $(CARD)$(_CARD_P)1
+_CARD_ROOT ?= $(CARD)$(_CARD_P)2
+
+
+# =====
+define show_config
+	@ ./tools/say "===== Target configuration ====="
+	@ echo "    PROJECT = $(PROJECT)"
+	@ echo "    BOARD   = $(BOARD)"
+	@ echo "    STAGES  = $(STAGES)"
+	@ echo
+	@ echo "    BUILD_OPTS = $(BUILD_OPTS)"
+	@ echo "    HOSTNAME   = $(HOSTNAME)"
+	@ echo "    LOCALE     = $(LOCALE)"
+	@ echo "    TIMEZONE   = $(TIMEZONE)"
+	@ echo "    REPO_URL   = $(REPO_URL)"
+	@ echo
+	@ echo "    CARD = $(CARD)"
+	@ echo "           |-- boot: $(_CARD_BOOT)"
+	@ echo "           +-- root: $(_CARD_ROOT)"
+endef
+
+define check_build
+	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
+endef
+
 
 # =====
 all:
-	@ echo "Available commands:"
+	@ echo
+	@ ./tools/say "===== Available commands  ====="
 	@ echo "    make                # Print this help"
-	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs"
+	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell          # Run Arch-ARM shell"
 	@ echo "    make binfmt         # Before build"
 	@ echo "    make scan           # Find all RPi devices in the local network"
 	@ echo "    make clean          # Remove the generated rootfs"
-	@ echo "    make format         # Format $(CARD) to $(CARD_BOOT) (vfat), $(CARD_ROOT) (ext4)"
+	@ echo "    make format         # Format $(CARD) to $(_CARD_BOOT) (vfat), $(_CARD_ROOT) (ext4)"
 	@ echo "    make install        # Install rootfs to partitions on $(CARD)"
+	@ echo
+	$(call show_config)
+	@ echo
 
 
 rpi:
 	make binfmt os \
-		BOARD=rpi \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
-		STAGES="__init__ os watchdog ro rootssh sshkeygen __cleanup__"
 
 
 rpi2:
 	make binfmt os \
 		BOARD=rpi2 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
-		STAGES="__init__ os watchdog ro rootssh sshkeygen __cleanup__"
 
 
 rpi3:
 	make binfmt os \
 		BOARD=rpi3 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
-		STAGES="__init__ os watchdog ro rootssh sshkeygen __cleanup__"
 
 
 shell:
-	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
+	$(call check_build)
 	docker run --rm -it `cat $(_BUILDED_IMAGE)` /bin/bash
 
 
@@ -112,6 +139,7 @@ os: _buildctx
 			--build-arg "REPO_URL=$(REPO_URL)" \
 		--rm --tag $(_RPI_RESULT_IMAGE) $(_BUILD_DIR)
 	echo $(_RPI_RESULT_IMAGE) > $(_BUILDED_IMAGE)
+	$(call show_config)
 	@ ./tools/say "===== Build complete ====="
 
 
@@ -180,7 +208,7 @@ clean-all: _root_runner clean
 
 
 format: _root_runner
-	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
+	$(call check_build)
 	@ ./tools/say "===== Formatting $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
@@ -199,14 +227,14 @@ format: _root_runner
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
 		&& set -e \
-		&& mkfs.vfat $(CARD_BOOT) \
-		&& yes | mkfs.ext4 $(CARD_ROOT) \
+		&& mkfs.vfat $(_CARD_BOOT) \
+		&& yes | mkfs.ext4 $(_CARD_ROOT) \
 	"
 	@ ./tools/say "===== Format complete ====="
 
 
 extract: _root_runner
-	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
+	$(call check_build)
 	@ ./tools/say "===== Extracting image from Docker ====="
 	#
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
@@ -222,8 +250,8 @@ install: extract format
 	@ ./tools/say "===== Installing to $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		mkdir -p mnt/boot mnt/rootfs \
-		&& mount $(CARD_BOOT) mnt/boot \
-		&& mount $(CARD_ROOT) mnt/rootfs \
+		&& mount $(_CARD_BOOT) mnt/boot \
+		&& mount $(_CARD_ROOT) mnt/rootfs \
 		&& rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/boot/* mnt/boot \
 		&& rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/* mnt/rootfs --exclude boot \
 		&& mkdir mnt/rootfs/boot \

@@ -41,23 +41,18 @@
 Вся работа с **pi-builder** выполняется с помощью главного [Makefile](https://github.com/pi-kvm/pi-builder/blob/master/Makefile) в корне репозитория. В его начале перечислены параметры, доступные для изменения; все остальные, начинающиеся с символа `_`, менять не рекомендуется (только если вы точно не знаете, что делаете).
 
 ```Makefile
-CARD ?= /dev/mmcblk0  # Путь к вашей SD-карте, на нее будет устанавливаться собранная система командой make install
-CARD_BOOT ?= $(CARD)p1  # Раздел для /boot
-CARD_ROOT ?= $(CARD)p2  # Раздел для /
-
-BOARD ?= rpi  # Целевая платформа Raspberry Pi;
-STAGES ?= __init__  # Список необходимых стейджей, об этом подробнее ниже
-
 PROJECT ?= common  # Пространство имен для промежуточных образов, просто назовите как нравится
-BUILD_OPTS ?=  # Всякие дополнительные опции для docker build
-QEMU_ARM_STATIC_PLACE ?= /usr/bin/qemu-arm-static  # Путь к qemu-arm-static ВНУТРИ КОНТЕЙНЕРА
+BOARD ?= rpi  # Целевая платформа Raspberry Pi
+STAGES ?= __init__ os watchdog ro rootssh sshkeygen __cleanup__  # Список необходимых стейджей, об этом подробнее ниже
+
 HOSTNAME ?= pi  # Имя хоста для получившейся системы
 LOCALE ?= en_US  # Локаль будущей системы (UTF-8)
 TIMEZONE ?= Europe/Moscow  # Таймзона будущей системы
 REPO_URL ?= http://mirror.yandex.ru/archlinux-arm  # Зеркало пакетов и всего загружаемого контента
+BUILD_OPTS ?=  # Всякие дополнительные опции для docker build
 ```
 
-Самые важные параметры - это `BOARD`, определяющий, под какую плату нужно собрать систему, `STAGES`, указывающий, какие стейджи необходимо включить и `CARD*`.
+Самые важные параметры - это `BOARD`, определяющий, под какую плату нужно собрать систему, `STAGES`, указывающий, какие стейджи необходимо включить и `CARD`.
 
 Например, вот так выглядит сборка системы с ридонли-корнем и вачдогом (выдержка из Makefile). Ее можно активировать с помощью команды `make rpi2`:
 ```Makefile
@@ -95,21 +90,37 @@ $ make install
 $ make os BOARD=rpi2 STAGES="__init__ os __cleanup__"
 ```
 
-Остальные команды можно посмотреть так:
+Остальные команды и заданную сборочную конфигурацию можно посмотреть так:
 ```shell
 $ make
-Available commands:
+
+===== Available commands  =====
     make                # Print this help
-    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs
+    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config
     make shell          # Run Arch-ARM shell
     make binfmt         # Before build
     make scan           # Find all RPi devices in the local network
     make clean          # Remove the generated rootfs
     make format         # Format /dev/mmcblk0 to /dev/mmcblk0p1 (vfat), /dev/mmcblk0p2 (ext4)
     make install        # Install rootfs to partitions on /dev/mmcblk0
+
+===== Target configuration =====
+    PROJECT = common
+    BOARD   = rpi
+    STAGES  = __init__ os watchdog ro rootssh sshkeygen __cleanup__
+
+    BUILD_OPTS =
+    HOSTNAME   = pi
+    LOCALE     = en_US
+    TIMEZONE   = Europe/Moscow
+    REPO_URL   = http://mirror.yandex.ru/archlinux-arm
+
+    CARD = /dev/mmcblk0
+           |-- boot: /dev/mmcblk0p1
+           +-- root: /dev/mmcblk0p2
 ```
 
-* **Важно**: проверьте в Makefile путь к SD-карте в переменных `CARD*` и отключите автомонтирование, чтобы свежеотформатированная карта памяти не прицепилась к вашей системе и скрипт установки не зафейлился от этого.
+* **Важно**: проверьте в Makefile путь к SD-карте в переменнjq `CARD` и отключите автомонтирование, чтобы свежеотформатированная карта памяти не прицепилась к вашей системе и скрипт установки не зафейлился от этого.
 * **Очень важно**: положите в каталог [stages/rootssh/pubkeys](https://github.com/pi-kvm/pi-builder/tree/master/stages/rootssh/pubkeys) свой SSH-ключ, иначе не сможете потом залогиниться в систему, или не используйте стейдж `rootssh`.
 * **Еще более важно**: прочитайте весь этот README целиком, чтобы понимать, что и зачем вы все-таки делаете.
 
