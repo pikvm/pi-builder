@@ -60,7 +60,7 @@ RUN pacman --noconfirm -Syy \
 			exit 1; \
 		fi \
 	) \
-	&& pacman --noconfirm -Sc
+	&& (pacman --noconfirm -Sc || true)
 
 RUN useradd pacman -rd /var/empty \
 	&& cd /tmp \
