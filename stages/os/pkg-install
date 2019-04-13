@@ -1,6 +1,0 @@
-#!/bin/sh
-pacman --noconfirm -Syy && env MAKEPKGOPTS="--ignorearch --nocheck $MAKEPKGOPTS" user-packer --noconfirm --noedit -S $@
-retval=$?
-pacman --noconfirm -Sc
-rm -rf /tmp/packer*
-exit $retval

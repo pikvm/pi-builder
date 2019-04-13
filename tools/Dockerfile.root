@@ -1,7 +1,7 @@
 FROM archlinux/base
 
 RUN pacman --noconfirm -Syu \
-	&& pacman --noconfirm -S \
+	&& pacman --needed --noconfirm -S \
 		base-devel \
 		arp-scan \
 		python \

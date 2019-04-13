@@ -15,18 +15,20 @@ RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 
 
 RUN pacman --noconfirm -Syy \
-	&& pacman --noconfirm -S \
+	&& pacman --needed --noconfirm -S \
 		glibc \
 		pacman \
 	&& pacman-db-upgrade \
 	&& pacman --noconfirm -Syu \
-	&& pacman --noconfirm -S \
+	&& pacman --needed --noconfirm -S \
 		p11-kit \
 		archlinux-keyring \
 		ca-certificates \
 		ca-certificates-mozilla \
 		ca-certificates-utils \
-	&& pacman --noconfirm -S \
+	&& pacman --needed --noconfirm -S \
+		base \
+		base-devel \
 		vim \
 		colordiff \
 		tree \
@@ -39,23 +41,16 @@ RUN pacman --noconfirm -Syy \
 		iotop \
 		strace \
 		lsof \
-		patch \
-		make \
-		fakeroot \
-		binutils \
 		arch-install-scripts \
-		gcc \
 		git \
 		jshon \
 		pyalpm \
 		expac \
-		sudo \
-		pkgconf \
 	&& ( \
 		if [[ "$BOARD" == "rpi" || "$BOARD" == "rpi2" || "$BOARD" == "rpi3" ]]; then \
-			pacman --noconfirm -S linux-raspberrypi linux-raspberrypi-headers; \
+			pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers; \
 		elif [ "$BOARD" == "rpi3-x64" ]; then \
-			pacman --noconfirm -S linux-aarch64 linux-aarch64-headers uboot-tools; \
+			pacman --needed --noconfirm -S linux-aarch64 linux-aarch64-headers uboot-tools; \
 		else \
 			echo "Unknown board: $BOARD"; \
 			exit 1; \
@@ -63,17 +58,14 @@ RUN pacman --noconfirm -Syy \
 	) \
 	&& (pacman --noconfirm -Sc || true)
 
-RUN useradd pacman -rd /var/empty \
+RUN useradd -r -c "Packer build user" -s /sbin/nologin packer \
 	&& cd /tmp \
-	&& sudo -u pacman git clone https://aur.archlinux.org/packer-git.git \
-	&& cd packer-git \
-	&& sudo -u pacman makepkg \
-	&& pacman --noconfirm -U packer-git-*.pkg.tar.xz \
-	&& cp /usr/bin/packer /usr/local/bin/user-packer \
-	&& sed -i -e "s/echo \"The build failed\.\" && return 1/err \"The build failed.\"/g" \
-		/usr/local/bin/user-packer \
+	&& sudo -u packer git clone https://aur.archlinux.org/packer-kit.git \
+	&& cd packer-kit \
+	&& sudo -u packer makepkg \
+	&& pacman --noconfirm -U packer-kit-*.pkg.tar.xz \
 	&& cd - \
-	&& rm -rf /tmp/packer-git
+	&& rm -rf /tmp/packer-kit
 
 RUN echo "LLMNR=no" >> /etc/systemd/resolved.conf
 
@@ -88,6 +80,5 @@ RUN mkdir /tmp/linux-profile \
 	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim,.gitconfig} \
 	&& rm -rf /tmp/linux-profile
 
-COPY stages/os/pkg-install /usr/local/bin/
 COPY say /usr/local/bin/
 COPY die /usr/local/bin/
