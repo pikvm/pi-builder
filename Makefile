@@ -16,7 +16,7 @@ CARD ?= /dev/mmcblk0
 # =====
 _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
-_BUILDED_IMAGE = ./.builded_image
+_BUILDED_IMAGE_CONFIG = ./.builded.conf
 
 ifeq ($(BOARD), rpi)
 	_QEMU_RUNNER_ARCH = arm
@@ -56,7 +56,11 @@ _CARD_ROOT ?= $(CARD)$(_CARD_P)2
 
 
 # =====
-define show_config
+define read_builded_config
+$(shell grep "^$(1)=" $(_BUILDED_IMAGE_CONFIG) | cut -d"=" -f2)
+endef
+
+define show_running_config
 	@ ./tools/say "===== Target configuration ====="
 	@ echo "    PROJECT = $(PROJECT)"
 	@ echo "    BOARD   = $(BOARD)"
@@ -74,7 +78,7 @@ define show_config
 endef
 
 define check_build
-	@ test -e $(_BUILDED_IMAGE) || ./tools/die "===== Not builded yet ====="
+	@ test -e $(_BUILDED_IMAGE_CONFIG) || ./tools/die "===== Not builded yet ====="
 endef
 
 
@@ -91,7 +95,7 @@ all:
 	@ echo "    make format         # Format $(CARD) to $(_CARD_BOOT) (vfat), $(_CARD_ROOT) (ext4)"
 	@ echo "    make install        # Install rootfs to partitions on $(CARD)"
 	@ echo
-	$(call show_config)
+	$(call show_running_config)
 	@ echo
 
 
@@ -114,7 +118,9 @@ rpi3:
 
 shell: binfmt
 	$(call check_build)
-	docker run --rm -it `cat $(_BUILDED_IMAGE)` /bin/bash
+	docker run \
+			--hostname $(call read_builded_config,HOSTNAME) \
+		--rm -it $(call read_builded_config,IMAGE) /bin/bash
 
 
 binfmt: _root_runner
@@ -128,7 +134,7 @@ scan: _root_runner
 
 os: binfmt _buildctx
 	@ ./tools/say "===== Building rootfs ====="
-	rm -f $(_BUILDED_IMAGE)
+	rm -f $(_BUILDED_IMAGE_CONFIG)
 	docker build $(BUILD_OPTS) \
 			--build-arg "BOARD=$(BOARD)" \
 			--build-arg "BASE_ROOTFS_TGZ=`basename $(_RPI_BASE_ROOTFS_TGZ)`" \
@@ -138,8 +144,9 @@ os: binfmt _buildctx
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
 		--rm --tag $(_RPI_RESULT_IMAGE) $(_BUILD_DIR)
-	echo $(_RPI_RESULT_IMAGE) > $(_BUILDED_IMAGE)
-	$(call show_config)
+	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILDED_IMAGE_CONFIG)
+	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILDED_IMAGE_CONFIG)
+	$(call show_running_config)
 	@ ./tools/say "===== Build complete ====="
 
 
@@ -187,7 +194,7 @@ $(_QEMU_RUNNER_STATIC):
 
 # =====
 clean:
-	rm -rf $(_BUILD_DIR) $(_BUILDED_IMAGE)
+	rm -rf $(_BUILD_DIR) $(_BUILDED_IMAGE_CONFIG)
 
 
 __DOCKER_RUN_TMP = docker run \
@@ -238,10 +245,10 @@ extract: _root_runner
 	@ ./tools/say "===== Extracting image from Docker ====="
 	#
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
-	docker save --output $(_RPI_RESULT_ROOTFS_TAR) `cat $(_BUILDED_IMAGE)`
+	docker save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_builded_config,IMAGE)
 	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	$(__DOCKER_RUN_TMP) bash -c " \
-		echo $(HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
+		echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
 	"
 	@ ./tools/say "===== Extraction complete ====="
 
