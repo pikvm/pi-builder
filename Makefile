@@ -96,23 +96,23 @@ all:
 
 
 rpi:
-	make binfmt os \
+	make os \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 
 
 rpi2:
-	make binfmt os \
+	make os \
 		BOARD=rpi2 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 
 
 rpi3:
-	make binfmt os \
+	make os \
 		BOARD=rpi3 \
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
 
 
-shell:
+shell: binfmt
 	$(call check_build)
 	docker run --rm -it `cat $(_BUILDED_IMAGE)` /bin/bash
 
@@ -126,7 +126,7 @@ scan: _root_runner
 	docker run --net=host --rm -it $(_ROOT_RUNNER) arp-scan --localnet | grep b8:27:eb: || true
 
 
-os: _buildctx
+os: binfmt _buildctx
 	@ ./tools/say "===== Building rootfs ====="
 	rm -f $(_BUILDED_IMAGE)
 	docker build $(BUILD_OPTS) \
@@ -258,3 +258,6 @@ install: extract format
 		&& umount mnt/boot mnt/rootfs \
 	"
 	@ ./tools/say "===== Installation complete ====="
+
+
+.NOTPARALLEL: clean-all install
