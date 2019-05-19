@@ -97,19 +97,19 @@ all:
 
 rpi:
 	make os \
-		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
+		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)"
 
 
 rpi2:
 	make os \
 		BOARD=rpi2 \
-		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
+		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)"
 
 
 rpi3:
 	make os \
 		BOARD=rpi3 \
-		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)" \
+		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)"
 
 
 shell: binfmt
