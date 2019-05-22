@@ -1,4 +1,4 @@
-RUN pkg-install watchdog
+RUN pkg-install -S watchdog
 
 COPY stages/watchdog/watchdog.conf /etc/watchdog.conf
 
