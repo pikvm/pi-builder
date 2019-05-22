@@ -62,7 +62,7 @@ RUN sed -i -e "s/#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
 
 RUN useradd -r -c "Packer build user" -m -d /var/packer -s /sbin/nologin packer \
 	&& cd /tmp \
-	&& sudo -u packer git clone https://aur.archlinux.org/packer-kit.git \
+	&& sudo -u packer git clone https://github.com/pi-kvm/packer-kit.git \
 	&& cd packer-kit \
 	&& sudo -u packer makepkg \
 	&& pacman --noconfirm -U packer-kit-*.pkg.tar.xz \
