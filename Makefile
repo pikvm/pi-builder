@@ -116,11 +116,16 @@ rpi3:
 		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)"
 
 
-shell: binfmt
+run: binfmt
 	$(call check_build)
 	docker run \
 			--hostname $(call read_builded_config,HOSTNAME) \
-		--rm -it $(call read_builded_config,IMAGE) /bin/bash
+			$(RUN_OPTS) \
+		--rm -it $(call read_builded_config,IMAGE) $(if $(RUN_CMD), $(RUN_CMD), /bin/bash)
+
+
+shell:
+	make run RUN_OPTS="$(RUN_OPTS)"
 
 
 binfmt: _root_runner
