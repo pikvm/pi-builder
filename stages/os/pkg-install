@@ -1,0 +1,14 @@
+#!/bin/sh
+if [ `whoami` != root ]; then
+	echo "Only root can do that"
+	exit 1
+fi
+if [ "$1" != "-S" ]; then
+	echo "Usage: $0 -S <packages...>"
+	exit 1
+fi
+shift
+pacman --noconfirm -Syy && pacman --noconfirm --needed -S $@
+retval=$?
+pacman --noconfirm -Sc
+exit $retval

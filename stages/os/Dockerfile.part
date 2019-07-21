@@ -60,15 +60,6 @@ RUN pacman --noconfirm -Syy \
 
 RUN sed -i -e "s/#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
 
-RUN useradd -r -c "Packer build user" -m -d /var/packer -s /sbin/nologin packer \
-	&& cd /tmp \
-	&& sudo -u packer git clone https://github.com/pi-kvm/packer-kit.git \
-	&& cd packer-kit \
-	&& sudo -u packer makepkg \
-	&& pacman --noconfirm -U packer-kit-*.pkg.tar.xz \
-	&& cd - \
-	&& rm -rf /tmp/packer-kit
-
 RUN echo "LLMNR=no" >> /etc/systemd/resolved.conf
 
 COPY stages/os/gitconfig /etc/skel/.gitconfig
@@ -82,5 +73,4 @@ RUN mkdir /tmp/linux-profile \
 	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim,.gitconfig} \
 	&& rm -rf /tmp/linux-profile
 
-COPY say /usr/local/bin/
-COPY die /usr/local/bin/
+COPY stages/os/pkg-install /usr/local/bin/
