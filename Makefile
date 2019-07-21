@@ -120,21 +120,21 @@ run: binfmt
 	$(call check_build)
 	docker run \
 			--hostname $(call read_builded_config,HOSTNAME) \
-			$(RUN_OPTS) \
-		--rm -it $(call read_builded_config,IMAGE) $(if $(RUN_CMD), $(RUN_CMD), /bin/bash)
+			$(if $(RUN_CMD), $(RUN_OPTS), -i) \
+		--rm -t $(call read_builded_config,IMAGE) $(if $(RUN_CMD), $(RUN_CMD), /bin/bash)
 
 
 shell:
-	make run RUN_OPTS="$(RUN_OPTS)"
+	make run RUN_OPTS="$(RUN_OPTS) -i"
 
 
 binfmt: _root_runner
-	docker run --privileged --rm -it $(_ROOT_RUNNER) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
+	docker run --privileged --rm -t $(_ROOT_RUNNER) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
 
 
 scan: _root_runner
 	@ ./tools/say "===== Searching pies in the local network ====="
-	docker run --net=host --rm -it $(_ROOT_RUNNER) arp-scan --localnet | grep b8:27:eb: || true
+	docker run --net=host --rm -t $(_ROOT_RUNNER) arp-scan --localnet | grep b8:27:eb: || true
 
 
 os: binfmt _buildctx
@@ -205,13 +205,13 @@ clean:
 __DOCKER_RUN_TMP = docker run \
 	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
 	-w /root/$(_TMP_DIR)/.. \
-	--rm -it $(_ROOT_RUNNER)
+	--rm -t $(_ROOT_RUNNER)
 
 
 __DOCKER_RUN_TMP_PRIVILEGED = docker run \
 	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
 	-w /root/$(_TMP_DIR)/.. \
-	--privileged --rm -it $(_ROOT_RUNNER)
+	--privileged --rm -t $(_ROOT_RUNNER)
 
 
 clean-all: _root_runner clean
