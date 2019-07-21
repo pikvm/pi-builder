@@ -2,7 +2,7 @@
 
 PROJECT ?= common
 BOARD ?= rpi
-STAGES ?= __init__ os pikvmrepo watchdog ro rootssh sshkeygen __cleanup__
+STAGES ?= __init__ os pikvm-repo watchdog ro ssh-root ssh-keygen __cleanup__
 
 HOSTNAME ?= pi
 LOCALE ?= en_US

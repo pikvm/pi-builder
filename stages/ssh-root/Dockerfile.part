@@ -1,6 +1,6 @@
 RUN userdel -r -f alarm
 
-COPY stages/rootssh/pubkeys pubkeys
+COPY stages/ssh-root/pubkeys pubkeys
 RUN mkdir -p /root/.ssh \
 	&& chmod 700 /root/.ssh \
 	&& cat pubkeys/*.pub > /root/.ssh/authorized_keys \
