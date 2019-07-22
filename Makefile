@@ -181,12 +181,16 @@ $(_RPI_BASE_ROOTFS_TGZ):
 
 
 $(_QEMU_RUNNER_STATIC):
+	# Using i386 QEMU because of this:
+	#   - https://bugs.launchpad.net/qemu/+bug/1805913
+	#   - https://lkml.org/lkml/2018/12/27/155
+	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
 	mkdir -p $(_TMP_DIR)
 	@ ./tools/say "===== QEMU magic ====="
 	mkdir -p $(_TMP_DIR)/qemu-user-static-deb
 	curl -L -f $(_QEMU_USER_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_USER_STATIC_BASE_URL)/ -z $@ \
 			| grep qemu-user-static \
-			| grep _amd64.deb \
+			| grep _i386.deb \
 			| sort -n \
 			| tail -n 1 \
 			| sed -n 's/.*href="\([^"]*\).*/\1/p'` -z $@ \
