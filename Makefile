@@ -91,6 +91,11 @@ endef
 
 
 # =====
+_DEP_BINFMT := $(if $(call optbool,$(PASS_ENSURE_BINFMT)),,binfmt)
+_DEP_TOOLBOX := $(if $(call optbool,$(PASS_ENSURE_TOOLBOX)),,toolbox)
+
+
+# =====
 all:
 	@ echo
 	@ $(_SAY) "===== Available commands  ====="
@@ -114,7 +119,7 @@ rpi3: BOARD=rpi3
 rpi rpi2 rpi3: os
 
 
-run: binfmt
+run: $(_DEP_BINFMT)
 	$(call check_build)
 	docker run \
 			--hostname $(call read_builded_config,HOSTNAME) \
@@ -132,16 +137,16 @@ toolbox:
 	@ $(_SAY) "===== Toolbox image is ready ====="
 
 
-binfmt: toolbox
+binfmt: $(_DEP_TOOLBOX)
 	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
 
 
-scan: toolbox
+scan: $(_DEP_TOOLBOX)
 	@ $(_SAY) "===== Searching pies in the local network ====="
 	docker run --net=host --rm -t $(_TOOLBOX_IMAGE) arp-scan --localnet | grep b8:27:eb: || true
 
 
-os: binfmt _buildctx
+os: $(_DEP_BINFMT) _buildctx
 	@ $(_SAY) "===== Building OS ====="
 	rm -f $(_BUILDED_IMAGE_CONFIG)
 	docker build $(BUILD_OPTS) \
@@ -230,12 +235,12 @@ __DOCKER_RUN_TMP_PRIVILEGED = docker run \
 	--privileged --rm -t $(_TOOLBOX_IMAGE)
 
 
-clean-all: toolbox clean
+clean-all: $(_DEP_TOOLBOX) clean
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	rm -rf $(_TMP_DIR)
 
 
-format: toolbox
+format: $(_DEP_TOOLBOX)
 	$(call check_build)
 	@ $(_SAY) "===== Formatting $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
@@ -261,7 +266,7 @@ format: toolbox
 	@ $(_SAY) "===== Format complete ====="
 
 
-extract: toolbox
+extract: $(_DEP_TOOLBOX)
 	$(call check_build)
 	@ $(_SAY) "===== Extracting image from Docker ====="
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
