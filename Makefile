@@ -15,7 +15,7 @@ CARD ?= /dev/mmcblk0
 
 # =====
 _IMAGES_PREFIX = pi-builder
-_ROOT_RUNNER = $(_IMAGES_PREFIX)-root-runner
+_TOOLBOX_IMAGE = $(_IMAGES_PREFIX)-toolbox
 
 _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
@@ -87,7 +87,8 @@ all:
 	@ echo "    make                # Print this help"
 	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell          # Run Arch-ARM shell"
-	@ echo "    make binfmt         # Before build"
+	@ echo "    make toolbox        # Build the image with internal tools"
+	@ echo "    make binfmt         # Configure ARM binfmt on the host system"
 	@ echo "    make scan           # Find all RPi devices in the local network"
 	@ echo "    make clean          # Remove the generated rootfs"
 	@ echo "    make format         # Format $(CARD) to $(_CARD_BOOT) (vfat), $(_CARD_ROOT) (ext4)"
@@ -115,13 +116,19 @@ shell: override RUN_OPTS:="$(RUN_OPTS) -i"
 shell: os
 
 
-binfmt: _root_runner
-	docker run --privileged --rm -t $(_ROOT_RUNNER) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
+toolbox:
+	@ $(_SAY) "===== Ensuring toolbox image ====="
+	docker build --rm --tag $(_TOOLBOX_IMAGE) tools -f tools/Dockerfile.root
+	@ $(_SAY) "===== Toolbox image is ready ====="
 
 
-scan: _root_runner
+binfmt: toolbox
+	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
+
+
+scan: toolbox
 	@ $(_SAY) "===== Searching pies in the local network ====="
-	docker run --net=host --rm -t $(_ROOT_RUNNER) arp-scan --localnet | grep b8:27:eb: || true
+	docker run --net=host --rm -t $(_TOOLBOX_IMAGE) arp-scan --localnet | grep b8:27:eb: || true
 
 
 os: binfmt _buildctx
@@ -144,12 +151,6 @@ os: binfmt _buildctx
 
 
 # =====
-_root_runner:
-	@ $(_SAY) "===== Ensuring root runner ====="
-	docker build --rm --tag $(_ROOT_RUNNER) tools -f tools/Dockerfile.root
-	@ $(_SAY) "===== Root runner is ready ====="
-
-
 _buildctx: _rpi_base_rootfs_tgz _qemu_runner_static
 	@ $(_SAY) "===== Assembling main Dockerfile ====="
 	rm -rf $(_BUILD_DIR)
@@ -210,21 +211,21 @@ clean:
 __DOCKER_RUN_TMP = docker run \
 	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
 	-w /root/$(_TMP_DIR)/.. \
-	--rm -t $(_ROOT_RUNNER)
+	--rm -t $(_TOOLBOX_IMAGE)
 
 
 __DOCKER_RUN_TMP_PRIVILEGED = docker run \
 	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
 	-w /root/$(_TMP_DIR)/.. \
-	--privileged --rm -t $(_ROOT_RUNNER)
+	--privileged --rm -t $(_TOOLBOX_IMAGE)
 
 
-clean-all: _root_runner clean
+clean-all: toolbox clean
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	rm -rf $(_TMP_DIR)
 
 
-format: _root_runner
+format: toolbox
 	$(call check_build)
 	@ $(_SAY) "===== Formatting $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
@@ -250,7 +251,7 @@ format: _root_runner
 	@ $(_SAY) "===== Format complete ====="
 
 
-extract: _root_runner
+extract: toolbox
 	$(call check_build)
 	@ $(_SAY) "===== Extracting image from Docker ====="
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
