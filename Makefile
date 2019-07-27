@@ -66,33 +66,33 @@ $(shell grep "^$(1)=" $(_BUILDED_IMAGE_CONFIG) | cut -d"=" -f2)
 endef
 
 define show_running_config
-	@ $(_SAY) "===== Running configuration ====="
-	@ echo "    PROJECT = $(PROJECT)"
-	@ echo "    BOARD   = $(BOARD)"
-	@ echo "    STAGES  = $(STAGES)"
-	@ echo
-	@ echo "    BUILD_OPTS = $(BUILD_OPTS)"
-	@ echo "    HOSTNAME   = $(HOSTNAME)"
-	@ echo "    LOCALE     = $(LOCALE)"
-	@ echo "    TIMEZONE   = $(TIMEZONE)"
-	@ echo "    REPO_URL   = $(REPO_URL)"
-	@ echo
-	@ echo "    CARD = $(CARD)"
-	@ echo "           |-- boot: $(_CARD_BOOT)"
-	@ echo "           +-- root: $(_CARD_ROOT)"
-	@ echo
-	@ echo "    QEMU_PREFIX = $(QEMU_PREFIX)"
-	@ echo "    QEMU_RM     = $(QEMU_RM)"
+@ $(_SAY) "===== Running configuration ====="
+@ echo "    PROJECT = $(PROJECT)"
+@ echo "    BOARD   = $(BOARD)"
+@ echo "    STAGES  = $(STAGES)"
+@ echo
+@ echo "    BUILD_OPTS = $(BUILD_OPTS)"
+@ echo "    HOSTNAME   = $(HOSTNAME)"
+@ echo "    LOCALE     = $(LOCALE)"
+@ echo "    TIMEZONE   = $(TIMEZONE)"
+@ echo "    REPO_URL   = $(REPO_URL)"
+@ echo
+@ echo "    CARD = $(CARD)"
+@ echo "           |-- boot: $(_CARD_BOOT)"
+@ echo "           +-- root: $(_CARD_ROOT)"
+@ echo
+@ echo "    QEMU_PREFIX = $(QEMU_PREFIX)"
+@ echo "    QEMU_RM     = $(QEMU_RM)"
 endef
 
 define check_build
-	@ test -e $(_BUILDED_IMAGE_CONFIG) || $(_DIE) "===== Not builded yet ====="
+@ test -e $(_BUILDED_IMAGE_CONFIG) || $(_DIE) "===== Not builded yet ====="
 endef
 
 
 # =====
-_DEP_BINFMT := $(if $(call optbool,$(PASS_ENSURE_BINFMT)),,binfmt)
-_DEP_TOOLBOX := $(if $(call optbool,$(PASS_ENSURE_TOOLBOX)),,toolbox)
+__DEP_BINFMT := $(if $(call optbool,$(PASS_ENSURE_BINFMT)),,binfmt)
+__DEP_TOOLBOX := $(if $(call optbool,$(PASS_ENSURE_TOOLBOX)),,toolbox)
 
 
 # =====
@@ -119,7 +119,7 @@ rpi3: BOARD=rpi3
 rpi rpi2 rpi3: os
 
 
-run: $(_DEP_BINFMT)
+run: $(__DEP_BINFMT)
 	$(call check_build)
 	docker run \
 			--hostname $(call read_builded_config,HOSTNAME) \
@@ -137,16 +137,16 @@ toolbox:
 	@ $(_SAY) "===== Toolbox image is ready ====="
 
 
-binfmt: $(_DEP_TOOLBOX)
+binfmt: $(__DEP_TOOLBOX)
 	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
 
 
-scan: $(_DEP_TOOLBOX)
+scan: $(__DEP_TOOLBOX)
 	@ $(_SAY) "===== Searching pies in the local network ====="
 	docker run --net=host --rm -t $(_TOOLBOX_IMAGE) arp-scan --localnet | grep b8:27:eb: || true
 
 
-os: $(_DEP_BINFMT) _buildctx
+os: $(__DEP_BINFMT) _buildctx
 	@ $(_SAY) "===== Building OS ====="
 	rm -f $(_BUILDED_IMAGE_CONFIG)
 	docker build $(BUILD_OPTS) \
@@ -235,12 +235,12 @@ __DOCKER_RUN_TMP_PRIVILEGED = docker run \
 	--privileged --rm -t $(_TOOLBOX_IMAGE)
 
 
-clean-all: $(_DEP_TOOLBOX) clean
+clean-all: $(__DEP_TOOLBOX) clean
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	rm -rf $(_TMP_DIR)
 
 
-format: $(_DEP_TOOLBOX)
+format: $(__DEP_TOOLBOX)
 	$(call check_build)
 	@ $(_SAY) "===== Formatting $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
@@ -266,7 +266,7 @@ format: $(_DEP_TOOLBOX)
 	@ $(_SAY) "===== Format complete ====="
 
 
-extract: $(_DEP_TOOLBOX)
+extract: $(__DEP_TOOLBOX)
 	$(call check_build)
 	@ $(_SAY) "===== Extracting image from Docker ====="
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
