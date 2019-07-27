@@ -57,6 +57,10 @@ _DIE = ./tools/die
 
 
 # =====
+define optbool
+$(filter $(shell echo $(1) | tr A-Z a-z),yes on 1)
+endef
+
 define read_builded_config
 $(shell grep "^$(1)=" $(_BUILDED_IMAGE_CONFIG) | cut -d"=" -f2)
 endef
@@ -265,7 +269,7 @@ extract: toolbox
 	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	$(__DOCKER_RUN_TMP) bash -c " \
 		echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
-		&& (test -z '$(QEMU_RM)' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_RUNNER_STATIC_PLACE)) \
+		&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_RUNNER_STATIC_PLACE)) \
 	"
 	@ $(_SAY) "===== Extraction complete ====="
 
