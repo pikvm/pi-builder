@@ -12,7 +12,7 @@ BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
 
-QEMU_PREFIX ?=
+QEMU_PREFIX ?= /usr
 QEMU_RM ?= 1
 
 
@@ -31,7 +31,7 @@ _QEMU_RUNNER_ARCH = $(shell bash -c " \
 ")
 _QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
 _QEMU_RUNNER_STATIC = $(_TMP_DIR)/qemu-$(_QEMU_RUNNER_ARCH)-static
-_QEMU_RUNNER_STATIC_PLACE ?= $(QEMU_PREFIX)/usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
+_QEMU_RUNNER_STATIC_PLACE ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
 
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	if [ '$(BOARD)' == rpi ]; then echo rpi; \
