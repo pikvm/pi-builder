@@ -18,19 +18,19 @@ _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
 _BUILDED_IMAGE_CONFIG = ./.builded.conf
 
-ifeq ($(BOARD), rpi)
-	_QEMU_RUNNER_ARCH = arm
-	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-latest.tar.gz
-else ifeq ($(BOARD), rpi2)
-	_QEMU_RUNNER_ARCH = arm
-	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
-else ifeq ($(BOARD), rpi3)
-	_QEMU_RUNNER_ARCH = arm
-	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-2-latest.tar.gz
-else ifeq ($(BOARD), rpi3-x64)
-	_QEMU_RUNNER_ARCH = aarch64
-	_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-rpi-3-latest.tar.gz
-endif
+_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
+	if [ '$(BOARD)' == rpi ]; then echo rpi; \
+	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
+	elif [ '$(BOARD)' == rpi3-x64 ]; then echo rpi-3; \
+	else exit 1; \
+	fi \
+")-latest.tar.gz
+
+_QEMU_RUNNER_ARCH = $(shell bash -c " \
+	if [ '$(BOARD)' == rpi3-x64 ]; then echo aarch64; \
+	else echo arm; \
+	fi \
+")
 
 _QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
 _QEMU_RUNNER_STATIC = $(_TMP_DIR)/qemu-$(_QEMU_RUNNER_ARCH)-static
@@ -46,13 +46,9 @@ _RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
 _RPI_RESULT_ROOTFS_TAR = $(_TMP_DIR)/result-rootfs.tar
 _RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
 
-ifeq ($(findstring mmcblk, $(CARD)), mmcblk)
-	_CARD_P = p
-else ifeq ($(findstring loop, $(CARD)), loop)
-	_CARD_P = p
-endif
-_CARD_BOOT ?= $(CARD)$(_CARD_P)1
-_CARD_ROOT ?= $(CARD)$(_CARD_P)2
+_CARD_P = $(if $(findstring mmcblk,$(CARD)),p,$(if $(findstring loop,$(CARD)),p,))
+_CARD_BOOT = $(CARD)$(_CARD_P)1
+_CARD_ROOT = $(CARD)$(_CARD_P)2
 
 
 # =====
@@ -61,7 +57,7 @@ $(shell grep "^$(1)=" $(_BUILDED_IMAGE_CONFIG) | cut -d"=" -f2)
 endef
 
 define show_running_config
-	@ ./tools/say "===== Target configuration ====="
+	@ ./tools/say "===== Running configuration ====="
 	@ echo "    PROJECT = $(PROJECT)"
 	@ echo "    BOARD   = $(BOARD)"
 	@ echo "    STAGES  = $(STAGES)"
@@ -99,33 +95,22 @@ all:
 	@ echo
 
 
-rpi:
-	make os \
-		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)"
-
-
-rpi2:
-	make os \
-		BOARD=rpi2 \
-		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)"
-
-
-rpi3:
-	make os \
-		BOARD=rpi3 \
-		BUILD_OPTS="$(BUILD_OPTS) --build-arg NEW_SSH_KEYGEN=$(shell uuidgen)"
+rpi: BOARD=rpi
+rpi2: BOARD=rpi2
+rpi3: BOARD=rpi3
+rpi rpi2 rpi3: os
 
 
 run: binfmt
 	$(call check_build)
 	docker run \
 			--hostname $(call read_builded_config,HOSTNAME) \
-			$(if $(RUN_CMD), $(RUN_OPTS), -i) \
-		--rm -t $(call read_builded_config,IMAGE) $(if $(RUN_CMD), $(RUN_CMD), /bin/bash)
+			$(if $(RUN_CMD),$(RUN_OPTS),-i) \
+		--rm -t $(call read_builded_config,IMAGE) $(if $(RUN_CMD),$(RUN_CMD),/bin/bash)
 
 
-shell:
-	make run RUN_OPTS="$(RUN_OPTS) -i"
+shell: override RUN_OPTS:="$(RUN_OPTS) -i"
+shell: os
 
 
 binfmt: _root_runner
@@ -138,7 +123,7 @@ scan: _root_runner
 
 
 os: binfmt _buildctx
-	@ ./tools/say "===== Building rootfs ====="
+	@ ./tools/say "===== Building OS ====="
 	rm -f $(_BUILDED_IMAGE_CONFIG)
 	docker build $(BUILD_OPTS) \
 			--build-arg "BOARD=$(BOARD)" \
@@ -148,6 +133,7 @@ os: binfmt _buildctx
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
+			--build-arg "REBUILD=$(shell uuidgen)" \
 		--rm --tag $(_RPI_RESULT_IMAGE) $(_BUILD_DIR)
 	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILDED_IMAGE_CONFIG)
 	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILDED_IMAGE_CONFIG)
@@ -157,11 +143,13 @@ os: binfmt _buildctx
 
 # =====
 _root_runner:
+	@ ./tools/say "===== Ensuring root runner ====="
 	docker build --rm --tag $(_ROOT_RUNNER) tools -f tools/Dockerfile.root
+	@ ./tools/say "===== Root runner is ready ====="
 
 
-_buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_RUNNER_STATIC)
-	@ ./tools/say "===== Assembling Dockerfile ====="
+_buildctx: _rpi_base_rootfs_tgz _qemu_runner_static
+	@ ./tools/say "===== Assembling main Dockerfile ====="
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
 	cp $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)
@@ -172,33 +160,44 @@ _buildctx: $(_RPI_BASE_ROOTFS_TGZ) $(_QEMU_RUNNER_STATIC)
 	for stage in $(STAGES); do \
 		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_BUILD_DIR)/Dockerfile; \
 	done
+	@ ./tools/say "===== Main Dockerfile is ready ====="
 
 
-$(_RPI_BASE_ROOTFS_TGZ):
-	mkdir -p $(_TMP_DIR)
-	@ ./tools/say "===== Fetching base rootfs ====="
-	curl -L -f $(_RPI_ROOTFS_URL) -z $@ -o $@
+_rpi_base_rootfs_tgz:
+	@ ./tools/say "===== Ensuring base rootfs ====="
+	if [ ! -e $(_RPI_BASE_ROOTFS_TGZ) ]; then \
+		mkdir -p $(_TMP_DIR) \
+		&& curl -L -f $(_RPI_ROOTFS_URL) -z $(_RPI_BASE_ROOTFS_TGZ) -o $(_RPI_BASE_ROOTFS_TGZ) \
+		&& ./tools/say "===== Base rootfs downloaded =====" \
+	; else \
+		./tools/say "===== Base rootfs found =====" \
+	; fi
 
 
-$(_QEMU_RUNNER_STATIC):
+_qemu_runner_static:
+	@ ./tools/say "===== Ensuring QEMU ====="
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
-	mkdir -p $(_TMP_DIR)
-	@ ./tools/say "===== QEMU magic ====="
-	mkdir -p $(_TMP_DIR)/qemu-user-static-deb
-	curl -L -f $(_QEMU_USER_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_USER_STATIC_BASE_URL)/ -z $@ \
-			| grep qemu-user-static \
-			| grep _i386.deb \
-			| sort -n \
-			| tail -n 1 \
-			| sed -n 's/.*href="\([^"]*\).*/\1/p'` -z $@ \
-		-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb
-	cd $(_TMP_DIR)/qemu-user-static-deb \
-	&& ar vx qemu-user-static.deb \
-	&& tar -xJf data.tar.xz
-	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static $@
+	if [ ! -e $(_QEMU_RUNNER_STATIC) ]; then \
+		mkdir -p $(_TMP_DIR)/qemu-user-static-deb \
+		&& curl -L -f $(_QEMU_USER_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_USER_STATIC_BASE_URL)/ -z $(_QEMU_RUNNER_STATIC) \
+				| grep qemu-user-static \
+				| grep _i386.deb \
+				| sort -n \
+				| tail -n 1 \
+				| sed -n 's/.*href="\([^"]*\).*/\1/p'` -z $(_QEMU_RUNNER_STATIC) \
+			-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
+		&& pushd $(_TMP_DIR)/qemu-user-static-deb \
+		&& ar vx qemu-user-static.deb \
+		&& tar -xJf data.tar.xz \
+		&& popd \
+		&& cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static $(_QEMU_RUNNER_STATIC) \
+		&& ./tools/say "===== QEMU downloaded =====" \
+	; else \
+		./tools/say "===== QEMU found =====" \
+	; fi
 
 
 # =====
@@ -252,7 +251,6 @@ format: _root_runner
 extract: _root_runner
 	$(call check_build)
 	@ ./tools/say "===== Extracting image from Docker ====="
-	#
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	docker save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_builded_config,IMAGE)
 	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)

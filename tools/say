@@ -1,4 +1,5 @@
 #!/bin/sh
+tput bold
 tput setaf 2
 echo "$@"
 tput sgr0
