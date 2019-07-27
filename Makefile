@@ -14,9 +14,21 @@ CARD ?= /dev/mmcblk0
 
 
 # =====
+_IMAGES_PREFIX = pi-builder
+_ROOT_RUNNER = $(_IMAGES_PREFIX)-root-runner
+
 _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
 _BUILDED_IMAGE_CONFIG = ./.builded.conf
+
+_QEMU_RUNNER_ARCH = $(shell bash -c " \
+	if [ '$(BOARD)' == rpi3-x64 ]; then echo aarch64; \
+	else echo arm; \
+	fi \
+")
+_QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
+_QEMU_RUNNER_STATIC = $(_TMP_DIR)/qemu-$(_QEMU_RUNNER_ARCH)-static
+_QEMU_RUNNER_STATIC_PLACE ?= /usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
 
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	if [ '$(BOARD)' == rpi ]; then echo rpi; \
@@ -25,21 +37,6 @@ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	else exit 1; \
 	fi \
 ")-latest.tar.gz
-
-_QEMU_RUNNER_ARCH = $(shell bash -c " \
-	if [ '$(BOARD)' == rpi3-x64 ]; then echo aarch64; \
-	else echo arm; \
-	fi \
-")
-
-_QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
-_QEMU_RUNNER_STATIC = $(_TMP_DIR)/qemu-$(_QEMU_RUNNER_ARCH)-static
-_QEMU_RUNNER_STATIC_PLACE ?= /usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
-
-_IMAGES_PREFIX = pi-builder
-
-_ROOT_RUNNER = $(_IMAGES_PREFIX)-root-runner
-
 _RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs-$(BOARD).tar.gz
 _RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(BOARD)
 _RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
@@ -52,12 +49,17 @@ _CARD_ROOT = $(CARD)$(_CARD_P)2
 
 
 # =====
+_SAY = ./tools/say
+_DIE = ./tools/die
+
+
+# =====
 define read_builded_config
 $(shell grep "^$(1)=" $(_BUILDED_IMAGE_CONFIG) | cut -d"=" -f2)
 endef
 
 define show_running_config
-	@ ./tools/say "===== Running configuration ====="
+	@ $(_SAY) "===== Running configuration ====="
 	@ echo "    PROJECT = $(PROJECT)"
 	@ echo "    BOARD   = $(BOARD)"
 	@ echo "    STAGES  = $(STAGES)"
@@ -74,14 +76,14 @@ define show_running_config
 endef
 
 define check_build
-	@ test -e $(_BUILDED_IMAGE_CONFIG) || ./tools/die "===== Not builded yet ====="
+	@ test -e $(_BUILDED_IMAGE_CONFIG) || $(_DIE) "===== Not builded yet ====="
 endef
 
 
 # =====
 all:
 	@ echo
-	@ ./tools/say "===== Available commands  ====="
+	@ $(_SAY) "===== Available commands  ====="
 	@ echo "    make                # Print this help"
 	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell          # Run Arch-ARM shell"
@@ -118,12 +120,12 @@ binfmt: _root_runner
 
 
 scan: _root_runner
-	@ ./tools/say "===== Searching pies in the local network ====="
+	@ $(_SAY) "===== Searching pies in the local network ====="
 	docker run --net=host --rm -t $(_ROOT_RUNNER) arp-scan --localnet | grep b8:27:eb: || true
 
 
 os: binfmt _buildctx
-	@ ./tools/say "===== Building OS ====="
+	@ $(_SAY) "===== Building OS ====="
 	rm -f $(_BUILDED_IMAGE_CONFIG)
 	docker build $(BUILD_OPTS) \
 			--build-arg "BOARD=$(BOARD)" \
@@ -138,44 +140,44 @@ os: binfmt _buildctx
 	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILDED_IMAGE_CONFIG)
 	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILDED_IMAGE_CONFIG)
 	$(call show_running_config)
-	@ ./tools/say "===== Build complete ====="
+	@ $(_SAY) "===== Build complete ====="
 
 
 # =====
 _root_runner:
-	@ ./tools/say "===== Ensuring root runner ====="
+	@ $(_SAY) "===== Ensuring root runner ====="
 	docker build --rm --tag $(_ROOT_RUNNER) tools -f tools/Dockerfile.root
-	@ ./tools/say "===== Root runner is ready ====="
+	@ $(_SAY) "===== Root runner is ready ====="
 
 
 _buildctx: _rpi_base_rootfs_tgz _qemu_runner_static
-	@ ./tools/say "===== Assembling main Dockerfile ====="
+	@ $(_SAY) "===== Assembling main Dockerfile ====="
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
 	cp $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)
 	cp $(_QEMU_RUNNER_STATIC) $(_BUILD_DIR)
-	cp -r tools/say tools/die $(_BUILD_DIR)
+	cp -r $(_SAY) $(_DIE) $(_BUILD_DIR)
 	cp -r stages $(_BUILD_DIR)
 	echo -n > $(_BUILD_DIR)/Dockerfile
 	for stage in $(STAGES); do \
 		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_BUILD_DIR)/Dockerfile; \
 	done
-	@ ./tools/say "===== Main Dockerfile is ready ====="
+	@ $(_SAY) "===== Main Dockerfile is ready ====="
 
 
 _rpi_base_rootfs_tgz:
-	@ ./tools/say "===== Ensuring base rootfs ====="
+	@ $(_SAY) "===== Ensuring base rootfs ====="
 	if [ ! -e $(_RPI_BASE_ROOTFS_TGZ) ]; then \
 		mkdir -p $(_TMP_DIR) \
 		&& curl -L -f $(_RPI_ROOTFS_URL) -z $(_RPI_BASE_ROOTFS_TGZ) -o $(_RPI_BASE_ROOTFS_TGZ) \
-		&& ./tools/say "===== Base rootfs downloaded =====" \
+		&& $(_SAY) "===== Base rootfs downloaded =====" \
 	; else \
-		./tools/say "===== Base rootfs found =====" \
+		$(_SAY) "===== Base rootfs found =====" \
 	; fi
 
 
 _qemu_runner_static:
-	@ ./tools/say "===== Ensuring QEMU ====="
+	@ $(_SAY) "===== Ensuring QEMU ====="
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
@@ -194,9 +196,9 @@ _qemu_runner_static:
 		&& tar -xJf data.tar.xz \
 		&& popd \
 		&& cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static $(_QEMU_RUNNER_STATIC) \
-		&& ./tools/say "===== QEMU downloaded =====" \
+		&& $(_SAY) "===== QEMU downloaded =====" \
 	; else \
-		./tools/say "===== QEMU found =====" \
+		$(_SAY) "===== QEMU found =====" \
 	; fi
 
 
@@ -224,7 +226,7 @@ clean-all: _root_runner clean
 
 format: _root_runner
 	$(call check_build)
-	@ ./tools/say "===== Formatting $(CARD) ====="
+	@ $(_SAY) "===== Formatting $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
 		&& set -e \
@@ -245,23 +247,23 @@ format: _root_runner
 		&& mkfs.vfat $(_CARD_BOOT) \
 		&& yes | mkfs.ext4 $(_CARD_ROOT) \
 	"
-	@ ./tools/say "===== Format complete ====="
+	@ $(_SAY) "===== Format complete ====="
 
 
 extract: _root_runner
 	$(call check_build)
-	@ ./tools/say "===== Extracting image from Docker ====="
+	@ $(_SAY) "===== Extracting image from Docker ====="
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	docker save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_builded_config,IMAGE)
 	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	$(__DOCKER_RUN_TMP) bash -c " \
 		echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
 	"
-	@ ./tools/say "===== Extraction complete ====="
+	@ $(_SAY) "===== Extraction complete ====="
 
 
 install: extract format
-	@ ./tools/say "===== Installing to $(CARD) ====="
+	@ $(_SAY) "===== Installing to $(CARD) ====="
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		mkdir -p mnt/boot mnt/rootfs \
 		&& mount $(_CARD_BOOT) mnt/boot \
@@ -271,7 +273,7 @@ install: extract format
 		&& mkdir mnt/rootfs/boot \
 		&& umount mnt/boot mnt/rootfs \
 	"
-	@ ./tools/say "===== Installation complete ====="
+	@ $(_SAY) "===== Installation complete ====="
 
 
 .NOTPARALLEL: clean-all install
