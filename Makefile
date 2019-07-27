@@ -119,7 +119,7 @@ run: binfmt
 
 
 shell: override RUN_OPTS:="$(RUN_OPTS) -i"
-shell: os
+shell: run
 
 
 toolbox:
