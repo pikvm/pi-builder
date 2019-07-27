@@ -12,6 +12,9 @@ BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
 
+QEMU_PREFIX ?=
+QEMU_RM ?= 1
+
 
 # =====
 _IMAGES_PREFIX = pi-builder
@@ -28,7 +31,7 @@ _QEMU_RUNNER_ARCH = $(shell bash -c " \
 ")
 _QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
 _QEMU_RUNNER_STATIC = $(_TMP_DIR)/qemu-$(_QEMU_RUNNER_ARCH)-static
-_QEMU_RUNNER_STATIC_PLACE ?= /usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
+_QEMU_RUNNER_STATIC_PLACE ?= $(QEMU_PREFIX)/usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
 
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	if [ '$(BOARD)' == rpi ]; then echo rpi; \
@@ -73,6 +76,9 @@ define show_running_config
 	@ echo "    CARD = $(CARD)"
 	@ echo "           |-- boot: $(_CARD_BOOT)"
 	@ echo "           +-- root: $(_CARD_ROOT)"
+	@ echo
+	@ echo "    QEMU_PREFIX = $(QEMU_PREFIX)"
+	@ echo "    QEMU_RM     = $(QEMU_RM)"
 endef
 
 define check_build
@@ -259,6 +265,7 @@ extract: toolbox
 	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	$(__DOCKER_RUN_TMP) bash -c " \
 		echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
+		&& (test -z '$(QEMU_RM)' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_RUNNER_STATIC_PLACE)) \
 	"
 	@ $(_SAY) "===== Extraction complete ====="
 
