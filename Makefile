@@ -150,6 +150,7 @@ os: $(__DEP_BINFMT) _buildctx
 	@ $(_SAY) "===== Building OS ====="
 	rm -f $(_BUILDED_IMAGE_CONFIG)
 	docker build $(BUILD_OPTS) \
+			$(if $(call optbool,$(NC)),--no-cache,) \
 			--build-arg "BOARD=$(BOARD)" \
 			--build-arg "BASE_ROOTFS_TGZ=`basename $(_RPI_BASE_ROOTFS_TGZ)`" \
 			--build-arg "QEMU_RUNNER_ARCH=$(_QEMU_RUNNER_ARCH)" \
