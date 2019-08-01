@@ -10,7 +10,8 @@ RUN pacman --noconfirm -Syu \
 		rsync \
 	&& (pacman --noconfirm -Sc || true)
 
-COPY say /usr/local/bin/
-COPY die /usr/local/bin/
-COPY install-binfmt /usr/local/bin/
-COPY docker-extract /usr/local/bin/
+RUN mkdir /tools
+COPY say /tools/
+COPY die /tools/
+COPY install-binfmt /tools/
+COPY docker-extract /tools/

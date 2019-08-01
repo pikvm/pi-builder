@@ -2,35 +2,41 @@
 set -e
 set -x
 
-[ `whoami` == "root" ] || die "===== Run as root plz ====="
-[ -n "$1" ] || die "===== Empty QEMU_RUNNER_STATIC_PLACE arg ====="
-[ -n "$2" ] || die "===== Empty QEMU_RUNNER_ARCH arg ====="
+SAY="/tools/say"
+DIE="/tools/die"
+
+QEMU_RUNNER_STATIC_PLACE="$1"
+QEMU_RUNNER_ARCH="$2"
+
+[ `whoami` == "root" ] || $DIE "===== Run as root plz ====="
+[ -n "$QEMU_RUNNER_STATIC_PLACE" ] || $DIE "===== Empty QEMU_RUNNER_STATIC_PLACE arg ====="
+[ -n "$QEMU_RUNNER_ARCH" ] || $DIE "===== Empty QEMU_RUNNER_ARCH arg ====="
 
 BINFMT_DIR="/proc/sys/fs/binfmt_misc"
-BINFMT_ARM="$BINFMT_DIR/$2"
+BINFMT_ARM="$BINFMT_DIR/$QEMU_RUNNER_ARCH"
 
-say "===== Configuring ARM-binfmt ($2) ====="
+$SAY "===== Configuring ARM-binfmt ($QEMU_RUNNER_ARCH) ====="
 mount binfmt_misc -t binfmt_misc "$BINFMT_DIR"
 if [ -e "$BINFMT_ARM" ]; then
-	REAL_QEMU_RUNNER_STATIC=`grep interpreter "$BINFMT_ARM" | awk '{print $2}'`
-	if [ "$1" != "$REAL_QEMU_RUNNER_STATIC" ]; then
-		die -e " ARM-binfmt ($2) is enabled but path is inconsistent\n"\
-			"  > $BINFMT_ARM: $REAL_QEMU_RUNNER_STATIC\n"\
-			"  > expected: $1\n"\
-			" Run \"echo -1 > $BINFMT_ARM\" to disable ARM globally (include host system)"
+	real=`grep interpreter "$BINFMT_ARM" | awk '{print $2}'`
+	if [ "$QEMU_RUNNER_STATIC_PLACE" != "$real" ]; then
+		$DIE -e " ARM-binfmt ($QEMU_RUNNER_ARCH) is enabled but path is inconsistent\n"\
+			"  > $BINFMT_ARM: $real\n"\
+			"  > expected: $QEMU_RUNNER_STATIC_PLACE\n"\
+			" Run \"echo -1 > $BINFMT_ARM\" to disable ARM globally (include the host system)"
 	fi
 else
-	say -e "===== Enabling ARM-binfmt ($2) ====="
+	$SAY -e "===== Enabling ARM-binfmt ($QEMU_RUNNER_ARCH) ====="
 	# https://github.com/qemu/qemu/blob/master/scripts/qemu-binfmt-conf.sh
-	if [ "$2" == "arm" ]; then
+	if [ "$QEMU_RUNNER_ARCH" == "arm" ]; then
 		magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00"
 		mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-	elif [ "$2" == "aarch64" ]; then
+	elif [ "$QEMU_RUNNER_ARCH" == "aarch64" ]; then
 		magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00"
 		mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
 	else
-		die " Unsupported QEMU arch: $2"
+		$DIE " Unsupported QEMU arch: $QEMU_RUNNER_ARCH"
 	fi
-	echo ":$2:M::$magic:$mask:$1:" > "$BINFMT_DIR/register"
+	echo ":$QEMU_RUNNER_ARCH:M::$magic:$mask:$QEMU_RUNNER_STATIC_PLACE:" > "$BINFMT_DIR/register"
 fi
-say "===== ARM-binfmt is ready ($2) ====="
+$SAY "===== ARM-binfmt is ready ($QEMU_RUNNER_ARCH) ====="

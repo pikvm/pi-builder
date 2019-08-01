@@ -138,7 +138,7 @@ toolbox:
 
 
 binfmt: $(__DEP_TOOLBOX)
-	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
+	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) /tools/install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
 
 
 scan: $(__DEP_TOOLBOX)
@@ -272,7 +272,7 @@ extract: $(__DEP_TOOLBOX)
 	@ $(_SAY) "===== Extracting image from Docker ====="
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	docker save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_builded_config,IMAGE)
-	$(__DOCKER_RUN_TMP) docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
+	$(__DOCKER_RUN_TMP) /tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	$(__DOCKER_RUN_TMP) bash -c " \
 		echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
 		&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_RUNNER_STATIC_PLACE)) \
