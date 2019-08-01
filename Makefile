@@ -52,8 +52,8 @@ _CARD_ROOT = $(CARD)$(_CARD_P)2
 
 
 # =====
-_SAY = ./tools/say
-_DIE = ./tools/die
+_SAY = ./toolbox/say
+_DIE = ./toolbox/die
 
 
 # =====
@@ -102,7 +102,7 @@ all:
 	@ echo "    make                # Print this help"
 	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell          # Run Arch-ARM shell"
-	@ echo "    make toolbox        # Build the image with internal tools"
+	@ echo "    make toolbox        # Build the toolbox image"
 	@ echo "    make binfmt         # Configure ARM binfmt on the host system"
 	@ echo "    make scan           # Find all RPi devices in the local network"
 	@ echo "    make clean          # Remove the generated rootfs"
@@ -133,7 +133,7 @@ shell: run
 
 toolbox:
 	@ $(_SAY) "===== Ensuring toolbox image ====="
-	docker build --rm --tag $(_TOOLBOX_IMAGE) tools -f tools/Dockerfile.root
+	docker build --rm --tag $(_TOOLBOX_IMAGE) toolbox -f toolbox/Dockerfile.root
 	@ $(_SAY) "===== Toolbox image is ready ====="
 
 
@@ -294,4 +294,5 @@ install: extract format
 	@ $(_SAY) "===== Installation complete ====="
 
 
+.PHONY: toolbox
 .NOTPARALLEL: clean-all install
