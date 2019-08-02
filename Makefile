@@ -24,15 +24,15 @@ _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
 _BUILDED_IMAGE_CONFIG = ./.builded.conf
 
-_QEMU_RUNNER_ARCH = $(shell bash -c " \
+_QEMU_GUEST_ARCH = $(shell bash -c " \
 	if [ '$(BOARD)' == rpi3-x64 ]; then echo aarch64; \
 	else echo arm; \
 	fi \
 ")
-_QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
-_QEMU_RUNNERS_COLLECTION = $(_TMP_DIR)/qemu
-_QEMU_RUNNER_STATIC = $(_QEMU_RUNNERS_COLLECTION)/qemu-$(_QEMU_RUNNER_ARCH)-static
-_QEMU_RUNNER_STATIC_PLACE ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
+_QEMU_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
+_QEMU_COLLECTION = $(_TMP_DIR)/qemu
+_QEMU_STATIC = $(_QEMU_COLLECTION)/qemu-$(_QEMU_GUEST_ARCH)-static
+_QEMU_STATIC_GUEST_PATH ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_GUEST_ARCH)-static
 
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	if [ '$(BOARD)' == rpi ]; then echo rpi; \
@@ -139,7 +139,7 @@ toolbox:
 
 
 binfmt: $(__DEP_TOOLBOX)
-	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) /tools/install-binfmt $(_QEMU_RUNNER_STATIC_PLACE) $(_QEMU_RUNNER_ARCH)
+	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) /tools/install-binfmt $(_QEMU_STATIC_GUEST_PATH) $(_QEMU_GUEST_ARCH)
 
 
 scan: $(__DEP_TOOLBOX)
@@ -154,8 +154,8 @@ os: $(__DEP_BINFMT) _buildctx
 			$(if $(call optbool,$(NC)),--no-cache,) \
 			--build-arg "BOARD=$(BOARD)" \
 			--build-arg "BASE_ROOTFS_TGZ=`basename $(_RPI_BASE_ROOTFS_TGZ)`" \
-			--build-arg "QEMU_RUNNER_ARCH=$(_QEMU_RUNNER_ARCH)" \
-			--build-arg "QEMU_RUNNER_STATIC_PLACE=$(_QEMU_RUNNER_STATIC_PLACE)" \
+			--build-arg "QEMU_RUNNER_ARCH=$(_QEMU_GUEST_ARCH)" \
+			--build-arg "QEMU_RUNNER_STATIC_PLACE=$(_QEMU_STATIC_GUEST_PATH)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
@@ -168,12 +168,12 @@ os: $(__DEP_BINFMT) _buildctx
 
 
 # =====
-_buildctx: _rpi_base_rootfs_tgz $(_QEMU_RUNNERS_COLLECTION)
+_buildctx: _rpi_base_rootfs_tgz $(_QEMU_COLLECTION)
 	@ $(_SAY) "===== Assembling main Dockerfile ====="
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
 	cp $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)
-	cp $(_QEMU_RUNNER_STATIC) $(_BUILD_DIR)
+	cp $(_QEMU_STATIC) $(_BUILD_DIR)
 	cp -r $(_SAY) $(_DIE) $(_BUILD_DIR)
 	cp -r stages $(_BUILD_DIR)
 	echo -n > $(_BUILD_DIR)/Dockerfile
@@ -194,14 +194,14 @@ _rpi_base_rootfs_tgz:
 	; fi
 
 
-$(_QEMU_RUNNERS_COLLECTION):
+$(_QEMU_COLLECTION):
 	@ $(_SAY) "===== Downloading QEMU ====="
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
 	mkdir -p $(_TMP_DIR)/qemu-user-static-deb
-	curl -L -f $(_QEMU_USER_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_USER_STATIC_BASE_URL)/ \
+	curl -L -f $(_QEMU_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_STATIC_BASE_URL)/ \
 			-z $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
 				| grep qemu-user-static \
 				| grep _i386.deb \
@@ -213,12 +213,12 @@ $(_QEMU_RUNNERS_COLLECTION):
 	cd $(_TMP_DIR)/qemu-user-static-deb \
 		&& ar vx qemu-user-static.deb \
 		&& tar -xJf data.tar.xz
-	rm -rf $(_QEMU_RUNNERS_COLLECTION)-tmp
-	mkdir $(_QEMU_RUNNERS_COLLECTION)-tmp
-	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $(_QEMU_RUNNERS_COLLECTION)-tmp
-	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-aarch64-static $(_QEMU_RUNNERS_COLLECTION)-tmp
-	mv $(_QEMU_RUNNERS_COLLECTION)-tmp $(_QEMU_RUNNERS_COLLECTION)
-	$(_SAY) "===== QEMU ready ====="
+	rm -rf $(_QEMU_COLLECTION).tmp
+	mkdir $(_QEMU_COLLECTION).tmp
+	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $(_QEMU_COLLECTION).tmp
+	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-aarch64-static $(_QEMU_COLLECTION).tmp
+	mv $(_QEMU_COLLECTION).tmp $(_QEMU_COLLECTION)
+	@ $(_SAY) "===== QEMU ready ====="
 
 
 # =====
@@ -277,7 +277,7 @@ extract: $(__DEP_TOOLBOX)
 	$(__DOCKER_RUN_TMP) /tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
 	$(__DOCKER_RUN_TMP) bash -c " \
 		echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
-		&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_RUNNER_STATIC_PLACE)) \
+		&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_STATIC_GUEST_PATH)) \
 	"
 	@ $(_SAY) "===== Extraction complete ====="
 
