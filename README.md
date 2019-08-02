@@ -111,7 +111,7 @@ $ make
     make format         # Format /dev/mmcblk0 to /dev/mmcblk0p1 (vfat), /dev/mmcblk0p2 (ext4)
     make install        # Install rootfs to partitions on /dev/mmcblk0
 
-===== Target configuration =====
+===== Running configuration =====
     PROJECT = common
     BOARD   = rpi
     STAGES  = __init__ os watchdog ro ssh-root ssh-keygen __cleanup__

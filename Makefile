@@ -30,7 +30,8 @@ _QEMU_RUNNER_ARCH = $(shell bash -c " \
 	fi \
 ")
 _QEMU_USER_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
-_QEMU_RUNNER_STATIC = $(_TMP_DIR)/qemu-$(_QEMU_RUNNER_ARCH)-static
+_QEMU_RUNNERS_COLLECTION = $(_TMP_DIR)/qemu
+_QEMU_RUNNER_STATIC = $(_QEMU_RUNNERS_COLLECTION)/qemu-$(_QEMU_RUNNER_ARCH)-static
 _QEMU_RUNNER_STATIC_PLACE ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_RUNNER_ARCH)-static
 
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
@@ -167,7 +168,7 @@ os: $(__DEP_BINFMT) _buildctx
 
 
 # =====
-_buildctx: _rpi_base_rootfs_tgz _qemu_runner_static
+_buildctx: _rpi_base_rootfs_tgz $(_QEMU_RUNNERS_COLLECTION)
 	@ $(_SAY) "===== Assembling main Dockerfile ====="
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
@@ -193,30 +194,31 @@ _rpi_base_rootfs_tgz:
 	; fi
 
 
-_qemu_runner_static:
-	@ $(_SAY) "===== Ensuring QEMU ====="
+$(_QEMU_RUNNERS_COLLECTION):
+	@ $(_SAY) "===== Downloading QEMU ====="
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
-	if [ ! -e $(_QEMU_RUNNER_STATIC) ]; then \
-		mkdir -p $(_TMP_DIR)/qemu-user-static-deb \
-		&& curl -L -f $(_QEMU_USER_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_USER_STATIC_BASE_URL)/ -z $(_QEMU_RUNNER_STATIC) \
+	mkdir -p $(_TMP_DIR)/qemu-user-static-deb
+	curl -L -f $(_QEMU_USER_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_USER_STATIC_BASE_URL)/ \
+			-z $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
 				| grep qemu-user-static \
 				| grep _i386.deb \
 				| sort -n \
 				| tail -n 1 \
-				| sed -n 's/.*href="\([^"]*\).*/\1/p'` -z $(_QEMU_RUNNER_STATIC) \
-			-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
-		&& pushd $(_TMP_DIR)/qemu-user-static-deb \
+				| sed -n 's/.*href="\([^"]*\).*/\1/p'` \
+		-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
+		-z $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb
+	cd $(_TMP_DIR)/qemu-user-static-deb \
 		&& ar vx qemu-user-static.deb \
-		&& tar -xJf data.tar.xz \
-		&& popd \
-		&& cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-$(_QEMU_RUNNER_ARCH)-static $(_QEMU_RUNNER_STATIC) \
-		&& $(_SAY) "===== QEMU downloaded =====" \
-	; else \
-		$(_SAY) "===== QEMU found =====" \
-	; fi
+		&& tar -xJf data.tar.xz
+	rm -rf $(_QEMU_RUNNERS_COLLECTION)-tmp
+	mkdir $(_QEMU_RUNNERS_COLLECTION)-tmp
+	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $(_QEMU_RUNNERS_COLLECTION)-tmp
+	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-aarch64-static $(_QEMU_RUNNERS_COLLECTION)-tmp
+	mv $(_QEMU_RUNNERS_COLLECTION)-tmp $(_QEMU_RUNNERS_COLLECTION)
+	$(_SAY) "===== QEMU ready ====="
 
 
 # =====
