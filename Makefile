@@ -53,13 +53,23 @@ _CARD_ROOT = $(CARD)$(_CARD_P)2
 
 
 # =====
-_SAY = ./toolbox/say
-_DIE = ./toolbox/die
-
-
-# =====
 define optbool
 $(filter $(shell echo $(1) | tr A-Z a-z),yes on 1)
+endef
+
+define say
+@ tput bold
+@ tput setaf 2
+@ echo "===== $1 ====="
+@ tput sgr0
+endef
+
+define die
+@ tput bold
+@ tput setaf 1
+@ echo "===== $1 ====="
+@ tput sgr0
+@ exit 1
 endef
 
 define read_builded_config
@@ -67,7 +77,7 @@ $(shell grep "^$(1)=" $(_BUILDED_IMAGE_CONFIG) | cut -d"=" -f2)
 endef
 
 define show_running_config
-@ $(_SAY) "===== Running configuration ====="
+$(call say,"Running configuration")
 @ echo "    PROJECT = $(PROJECT)"
 @ echo "    BOARD   = $(BOARD)"
 @ echo "    STAGES  = $(STAGES)"
@@ -87,7 +97,7 @@ define show_running_config
 endef
 
 define check_build
-@ test -e $(_BUILDED_IMAGE_CONFIG) || $(_DIE) "===== Not builded yet ====="
+$(if $(wildcard $(_BUILDED_IMAGE_CONFIG)),,$(call die,"Not builded yet"))
 endef
 
 
@@ -99,7 +109,7 @@ __DEP_TOOLBOX := $(if $(call optbool,$(PASS_ENSURE_TOOLBOX)),,toolbox)
 # =====
 all:
 	@ echo
-	@ $(_SAY) "===== Available commands  ====="
+	$(call say,"Available commands")
 	@ echo "    make                # Print this help"
 	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell          # Run Arch-ARM shell"
@@ -133,22 +143,27 @@ shell: run
 
 
 toolbox:
-	@ $(_SAY) "===== Ensuring toolbox image ====="
+	$(call say,"Ensuring toolbox image")
 	docker build --rm --tag $(_TOOLBOX_IMAGE) toolbox -f toolbox/Dockerfile.root
-	@ $(_SAY) "===== Toolbox image is ready ====="
+	$(call say,"Toolbox image is ready")
 
 
 binfmt: $(__DEP_TOOLBOX)
-	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) /tools/install-binfmt $(_QEMU_STATIC_GUEST_PATH) $(_QEMU_GUEST_ARCH)
+	$(call say,"Ensuring $(_QEMU_GUEST_ARCH) binfmt")
+	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) /tools/install-binfmt \
+		--mount \
+		$(_QEMU_GUEST_ARCH) \
+		$(_QEMU_STATIC_GUEST_PATH)
+	$(call say,"Binfmt $(_QEMU_GUEST_ARCH) is ready")
 
 
 scan: $(__DEP_TOOLBOX)
-	@ $(_SAY) "===== Searching pies in the local network ====="
+	$(call say,"Searching pies in the local network")
 	docker run --net=host --rm -t $(_TOOLBOX_IMAGE) arp-scan --localnet | grep b8:27:eb: || true
 
 
 os: $(__DEP_BINFMT) _buildctx
-	@ $(_SAY) "===== Building OS ====="
+	$(call say,"Building OS")
 	rm -f $(_BUILDED_IMAGE_CONFIG)
 	docker build $(BUILD_OPTS) \
 			$(if $(call optbool,$(NC)),--no-cache,) \
@@ -164,38 +179,35 @@ os: $(__DEP_BINFMT) _buildctx
 	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILDED_IMAGE_CONFIG)
 	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILDED_IMAGE_CONFIG)
 	$(call show_running_config)
-	@ $(_SAY) "===== Build complete ====="
+	$(call say,"Build complete")
 
 
 # =====
 _buildctx: _rpi_base_rootfs_tgz $(_QEMU_COLLECTION)
-	@ $(_SAY) "===== Assembling main Dockerfile ====="
+	$(call say,"Assembling main Dockerfile")
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
 	cp $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)
 	cp $(_QEMU_STATIC) $(_BUILD_DIR)
-	cp -r $(_SAY) $(_DIE) $(_BUILD_DIR)
 	cp -r stages $(_BUILD_DIR)
 	echo -n > $(_BUILD_DIR)/Dockerfile
 	for stage in $(STAGES); do \
 		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_BUILD_DIR)/Dockerfile; \
 	done
-	@ $(_SAY) "===== Main Dockerfile is ready ====="
+	$(call say,"Main Dockerfile is ready")
 
 
 _rpi_base_rootfs_tgz:
-	@ $(_SAY) "===== Ensuring base rootfs ====="
+	$(call say,"Ensuring base rootfs")
 	if [ ! -e $(_RPI_BASE_ROOTFS_TGZ) ]; then \
 		mkdir -p $(_TMP_DIR) \
 		&& curl -L -f $(_RPI_ROOTFS_URL) -z $(_RPI_BASE_ROOTFS_TGZ) -o $(_RPI_BASE_ROOTFS_TGZ) \
-		&& $(_SAY) "===== Base rootfs downloaded =====" \
-	; else \
-		$(_SAY) "===== Base rootfs found =====" \
 	; fi
+	$(call say,"Base rootfs is ready")
 
 
 $(_QEMU_COLLECTION):
-	@ $(_SAY) "===== Downloading QEMU ====="
+	$(call say,"Downloading QEMU")
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
@@ -218,7 +230,7 @@ $(_QEMU_COLLECTION):
 	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $(_QEMU_COLLECTION).tmp
 	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-aarch64-static $(_QEMU_COLLECTION).tmp
 	mv $(_QEMU_COLLECTION).tmp $(_QEMU_COLLECTION)
-	@ $(_SAY) "===== QEMU ready ====="
+	$(call say,"QEMU ready")
 
 
 # =====
@@ -245,7 +257,7 @@ clean-all: $(__DEP_TOOLBOX) clean
 
 format: $(__DEP_TOOLBOX)
 	$(call check_build)
-	@ $(_SAY) "===== Formatting $(CARD) ====="
+	$(call say,"Formatting $(CARD)")
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
 		&& set -e \
@@ -266,12 +278,12 @@ format: $(__DEP_TOOLBOX)
 		&& mkfs.vfat $(_CARD_BOOT) \
 		&& yes | mkfs.ext4 $(_CARD_ROOT) \
 	"
-	@ $(_SAY) "===== Format complete ====="
+	$(call say,"Format complete")
 
 
 extract: $(__DEP_TOOLBOX)
 	$(call check_build)
-	@ $(_SAY) "===== Extracting image from Docker ====="
+	$(call say,"Extracting image from Docker")
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
 	docker save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_builded_config,IMAGE)
 	$(__DOCKER_RUN_TMP) /tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
@@ -279,11 +291,11 @@ extract: $(__DEP_TOOLBOX)
 		echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
 		&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_STATIC_GUEST_PATH)) \
 	"
-	@ $(_SAY) "===== Extraction complete ====="
+	$(call say,"Extraction complete")
 
 
 install: extract format
-	@ $(_SAY) "===== Installing to $(CARD) ====="
+	$(call say,"Installing to $(CARD)")
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		mkdir -p mnt/boot mnt/rootfs \
 		&& mount $(_CARD_BOOT) mnt/boot \
@@ -293,7 +305,7 @@ install: extract format
 		&& mkdir mnt/rootfs/boot \
 		&& umount mnt/boot mnt/rootfs \
 	"
-	@ $(_SAY) "===== Installation complete ====="
+	$(call say,"Installation complete")
 
 
 .PHONY: toolbox

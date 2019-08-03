@@ -11,7 +11,5 @@ RUN pacman --noconfirm -Syu \
 	&& (pacman --noconfirm -Sc || true)
 
 RUN mkdir /tools
-COPY say /tools/
-COPY die /tools/
 COPY install-binfmt /tools/
 COPY docker-extract /tools/

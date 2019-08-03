@@ -25,10 +25,11 @@ from typing import Dict
 _logger = logging.getLogger("docker-extract")
 
 
+# =====
 def _get_image_manifest(image_tar: tarfile.TarFile) -> Dict:
     _logger.debug(":: Reading image manifest")
     with contextlib.closing(image_tar.extractfile("manifest.json")) as manifest_file:
-        manifest = json.load(manifest_file, encoding="utf-8")
+        manifest = json.load(manifest_file, encoding="utf-8")  # type: ignore
         assert len(manifest) == 1, "Can't process manifest.json:\n" + json.dumps(manifest, indent="    ")
         return manifest[0]
 
@@ -45,7 +46,7 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
         raise RuntimeError("You must be a root")
 
     if os.path.exists(root_path):
-        raise RuntimeError("%s: is already exists" % (root_path))
+        raise RuntimeError(f"{root_path}: is already exists")
     os.mkdir(root_path)
 
     for layer_path in layers:
@@ -60,7 +61,7 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
                     # https://github.com/moby/moby/blob/8e610b2b55bfd1bfa9436ab110d311f5e8a74dcb/pkg/archive/diff.go
                     # https://github.com/sylabs/singularity/blob/8a0e3008b29db85d1e23677d98978cafba1fdbe7/src/docker-extract.c#L21
 
-                    member_path = os.path.join(root_path, member.path)
+                    member_path = os.path.join(root_path, member.path)  # type: ignore
                     assert not member_path.startswith(".wh."), member_path
 
                     if member_path.endswith("/.wh..wh..opq"):
@@ -82,7 +83,7 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
 
                 layer_tar.extractall(
                     path=root_path,
-                    members=[member for member in members if "/.wh." not in member.path],
+                    members=[member for member in members if "/.wh." not in member.path],  # type: ignore
                     numeric_owner=True,
                 )
 
@@ -96,9 +97,10 @@ def _patch_os_symlink() -> None:
             os.unlink(dest)
         orig_os_symlink(src, dest)
 
-    os.symlink = rewrite_symlink
+    os.symlink = rewrite_symlink  # type: ignore
 
 
+# =====
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--list-layers", action="store_true", help="List layers in an image")
@@ -113,7 +115,7 @@ def main() -> None:
 
     with tarfile.open(options.input) as image_tar:
         with contextlib.closing(image_tar.extractfile("repositories")) as repos_file:
-            repos = json.load(repos_file, encoding="utf-8")
+            repos = json.load(repos_file, encoding="utf-8")  # type: ignore
 
         if options.list_tags:
             print("\n".join(_get_image_manifest(image_tar)["RepoTags"]))
@@ -126,5 +128,6 @@ def main() -> None:
             _extract_rootfs(image_tar, _get_image_layers(image_tar), options.root)
 
 
+# =====
 if __name__ == "__main__":
     main()

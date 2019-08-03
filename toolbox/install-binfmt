@@ -1,42 +1,119 @@
-#!/bin/sh
-set -e
-set -x
+#!/usr/bin/env python3
 
-SAY="/tools/say"
-DIE="/tools/die"
 
-QEMU_STATIC_GUEST_PATH="$1"
-QEMU_GUEST_ARCH="$2"
+import os
+import subprocess
+import dataclasses
+import argparse
+import logging
 
-[ `whoami` == "root" ] || $DIE "===== Run as root plz ====="
-[ -n "$QEMU_STATIC_GUEST_PATH" ] || $DIE "===== Empty QEMU_STATIC_GUEST_PATH arg ====="
-[ -n "$QEMU_GUEST_ARCH" ] || $DIE "===== Empty QEMU_GUEST_ARCH arg ====="
+from typing import Dict
 
-BINFMT_DIR="/proc/sys/fs/binfmt_misc"
-BINFMT_ARM="$BINFMT_DIR/$QEMU_GUEST_ARCH"
 
-$SAY "===== Configuring ARM-binfmt ($QEMU_GUEST_ARCH) ====="
-mount binfmt_misc -t binfmt_misc "$BINFMT_DIR"
-if [ -e "$BINFMT_ARM" ]; then
-	real=`grep interpreter "$BINFMT_ARM" | awk '{print $2}'`
-	if [ "$QEMU_STATIC_GUEST_PATH" != "$real" ]; then
-		$DIE -e " ARM-binfmt ($QEMU_GUEST_ARCH) is enabled but path is inconsistent\n"\
-			"  > $BINFMT_ARM: $real\n"\
-			"  > expected: $QEMU_STATIC_GUEST_PATH\n"\
-			" Run \"echo -1 > $BINFMT_ARM\" to disable ARM globally (include the host system)"
-	fi
-else
-	$SAY -e "===== Enabling ARM-binfmt ($QEMU_GUEST_ARCH) ====="
-	# https://github.com/qemu/qemu/blob/master/scripts/qemu-binfmt-conf.sh
-	if [ "$QEMU_GUEST_ARCH" == "arm" ]; then
-		magic="\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00"
-		mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-	elif [ "$QEMU_GUEST_ARCH" == "aarch64" ]; then
-		magic="\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00"
-		mask="\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-	else
-		$DIE " Unsupported QEMU arch: $QEMU_GUEST_ARCH"
-	fi
-	echo ":$QEMU_GUEST_ARCH:M::$magic:$mask:$QEMU_STATIC_GUEST_PATH:" > "$BINFMT_DIR/register"
-fi
-$SAY "===== ARM-binfmt is ready ($QEMU_GUEST_ARCH) ====="
+# =====
+@dataclasses.dataclass(frozen=True)
+class _Binfmt:
+    name: str
+    arch: str
+    magic: str
+    mask: str
+
+
+_BINFMT_DB = {
+    binfmt.arch: binfmt
+    for binfmt in [
+        _Binfmt(
+            name="ARM",
+            arch="arm",
+            magic=r"\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00",
+            mask=r"\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff",
+        ),
+        _Binfmt(
+            name="AArch64",
+            arch="aarch64",
+            magic=r"\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00",
+            mask=r"\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff",
+        ),
+    ]
+}
+
+
+# =====
+_logger = logging.getLogger("install-binfmt")
+
+
+# =====
+def _mount_binfmt(mount_path: str) -> None:
+    _logger.info(":: Mounting binfmt_misc to %r ...", mount_path)
+    subprocess.check_output(["mount", "binfmt_misc", "-t", "binfmt_misc", mount_path])
+
+
+def _check_binfmt(mount_path: str, binfmt: _Binfmt, interpreter_path: str) -> bool:
+    _logger.info(":: Checking %s binfmt configuration ...", binfmt.name)
+
+    binfmt_path = os.path.join(mount_path, binfmt.arch)
+    if os.path.exists(binfmt_path):
+        _logger.info(":: Found existent %s binfmt handler", binfmt.name)
+
+        with open(binfmt_path) as binfmt_file:
+            current_params: Dict[str, str] = dict(
+                (row.split(" ", 1) + [""])[:2]  # type: ignore
+                for row in filter(None, binfmt_file.read().split("\n"))
+            )
+            _logger.debug(":: Current configuration: %s", current_params)
+
+        mismatch = "\n".join(
+            f"  - Current {name} {current!r} != expected {expected!r}"
+            for (name, current, expected) in [
+                ("magic", current_params.get("magic", "").replace("454c46", "ELF"), binfmt.magic.replace(r"\x", "")),
+                ("mask", current_params.get("mask", ""), binfmt.mask.replace(r"\x", "")),
+                ("interpreter", current_params.get("interpreter"), interpreter_path),
+            ]
+            if current != expected
+        )
+        if mismatch:
+            raise RuntimeError(
+                f"Found unknown {binfmt.name} binfmt configuration:\n"
+                f"{mismatch}\n"
+                f"  - Run 'echo -1 > {binfmt_path}' to disable this binfmt globally"
+            )
+
+        return True
+    return False
+
+
+def _install_binfmt(mount_path: str, binfmt: _Binfmt, interpreter_path: str) -> None:
+    _logger.info(":: Installing %s binfmt as %r ...", binfmt.name, interpreter_path)
+    with open(os.path.join(mount_path, "register"), "w") as register_file:
+        register_file.write(f":{binfmt.arch}:M::{binfmt.magic}:{binfmt.mask}:{interpreter_path}:")
+
+
+# =====
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mount", action="store_true", help="Mount binfmt_misc")
+    parser.add_argument("--binfmt-misc", default="/proc/sys/fs/binfmt_misc", help="Path to binfmt_misc")
+    parser.add_argument("arch", choices=sorted(_BINFMT_DB))
+    parser.add_argument("interpreter")
+    parser.add_argument("-d", "--debug", action="store_const", const=logging.DEBUG, dest="log_level")
+    parser.set_defaults(log_level=logging.INFO)
+
+    options = parser.parse_args()
+    logging.basicConfig(level=options.log_level, format="%(message)s")
+
+    if os.getuid() != 0:
+        raise RuntimeError("You must be a root")
+
+    if options.mount:
+        _mount_binfmt(options.binfmt_misc)
+
+    binfmt = _BINFMT_DB[options.arch]
+    if not _check_binfmt(options.binfmt_misc, binfmt, options.interpreter):
+        _install_binfmt(options.binfmt_misc, binfmt, options.interpreter)
+
+    _logger.info(":: %s binfmt handler %r is ready", binfmt.name, options.interpreter)
+
+
+# =====
+if __name__ == "__main__":
+    main()
