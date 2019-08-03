@@ -192,8 +192,8 @@ os: $(__DEP_BINFMT) _buildctx
 			$(if $(call optbool,$(NC)),--no-cache,) \
 			--build-arg "BOARD=$(BOARD)" \
 			--build-arg "BASE_ROOTFS_TGZ=`basename $(_RPI_BASE_ROOTFS_TGZ)`" \
-			--build-arg "QEMU_RUNNER_ARCH=$(_QEMU_GUEST_ARCH)" \
-			--build-arg "QEMU_RUNNER_STATIC_PLACE=$(_QEMU_STATIC_GUEST_PATH)" \
+			--build-arg "QEMU_GUEST_ARCH=$(_QEMU_GUEST_ARCH)" \
+			--build-arg "QEMU_STATIC_GUEST_PATH=$(_QEMU_STATIC_GUEST_PATH)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
