@@ -1,12 +1,27 @@
 #!/usr/bin/env python3
-#
-# Based on http://blog.oddbit.com/2015/02/13/unpacking-docker-images
-#    https://github.com/larsks/undocker
-#
-# Simplified, cleared, using spec v1.2 AND (!) correct extracting .wh. and symlinks
-#
-# Docker image specification:
-#    https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+# ========================================================================== #
+#                                                                            #
+#    docker-extract - extract docker image to directory.                     #
+#                                                                            #
+#    Partially based on https://github.com/larsks/undocker and contains      #
+#    many major fixes for image spec v1.2.                                   #
+#                                                                            #
+#    Copyright (C) 2019  Maxim Devaev <mdevaev@gmail.com>                    #
+#                                                                            #
+#    This program is free software: you can redistribute it and/or modify    #
+#    it under the terms of the GNU General Public License as published by    #
+#    the Free Software Foundation, either version 3 of the License, or       #
+#    (at your option) any later version.                                     #
+#                                                                            #
+#    This program is distributed in the hope that it will be useful,         #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of          #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
+#    GNU General Public License for more details.                            #
+#                                                                            #
+#    You should have received a copy of the GNU General Public License       #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.  #
+#                                                                            #
+# ========================================================================== #
 
 
 import os
@@ -42,6 +57,8 @@ def _get_image_layers(image_tar: tarfile.TarFile) -> List[str]:
 
 
 def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: str) -> None:
+    # https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+
     if os.getuid() != 0:
         raise RuntimeError("You must be a root")
 
