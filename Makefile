@@ -191,9 +191,6 @@ os: $(__DEP_BINFMT) _buildctx
 	docker build $(BUILD_OPTS) \
 			$(if $(call optbool,$(NC)),--no-cache,) \
 			--build-arg "BOARD=$(BOARD)" \
-			--build-arg "BASE_ROOTFS_TGZ=`basename $(_RPI_BASE_ROOTFS_TGZ)`" \
-			--build-arg "QEMU_GUEST_ARCH=$(_QEMU_GUEST_ARCH)" \
-			--build-arg "QEMU_STATIC_GUEST_PATH=$(_QEMU_STATIC_GUEST_PATH)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
@@ -210,9 +207,14 @@ _buildctx: _rpi_base_rootfs_tgz $(_QEMU_COLLECTION)
 	$(call say,"Assembling main Dockerfile")
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
-	cp $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)
+	ln $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)/$(PROJECT)-$(_IMAGES_PREFIX)-base-rootfs-$(BOARD).tgz
 	cp $(_QEMU_STATIC) $(_BUILD_DIR)
 	cp -r stages $(_BUILD_DIR)
+	sed -i \
+			-e 's|%BASE_ROOTFS_TGZ%|$(PROJECT)-$(_IMAGES_PREFIX)-base-rootfs-$(BOARD).tgz|g' \
+			-e 's|%QEMU_GUEST_ARCH%|$(_QEMU_GUEST_ARCH)|g' \
+			-e 's|%QEMU_STATIC_GUEST_PATH%|$(_QEMU_STATIC_GUEST_PATH)|g ' \
+		$(_BUILD_DIR)/stages/__init__/Dockerfile.part
 	echo -n > $(_BUILD_DIR)/Dockerfile
 	for stage in $(STAGES); do \
 		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_BUILD_DIR)/Dockerfile; \
