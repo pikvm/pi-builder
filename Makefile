@@ -156,9 +156,12 @@ rpi rpi2 rpi3: os
 run: $(__DEP_BINFMT)
 	$(call check_build)
 	docker run \
+			--rm \
+			--tty \
 			--hostname $(call read_builded_config,HOSTNAME) \
-			$(if $(RUN_CMD),$(RUN_OPTS),-i) \
-		--rm -t $(call read_builded_config,IMAGE) $(if $(RUN_CMD),$(RUN_CMD),/bin/bash)
+			$(if $(RUN_CMD),$(RUN_OPTS),--interactive) \
+		$(call read_builded_config,IMAGE) \
+		$(if $(RUN_CMD),$(RUN_CMD),/bin/bash)
 
 
 shell: override RUN_OPTS:="$(RUN_OPTS) -i"
@@ -167,35 +170,52 @@ shell: run
 
 toolbox:
 	$(call say,"Ensuring toolbox image")
-	docker build --rm --tag $(_TOOLBOX_IMAGE) $(if $(TAG),--tag $(TAG),) toolbox -f toolbox/Dockerfile.root
+	docker build \
+			--rm \
+			--tag $(_TOOLBOX_IMAGE) \
+			$(if $(TAG),--tag $(TAG),) \
+			--file toolbox/Dockerfile.root \
+		toolbox
 	$(call say,"Toolbox image is ready")
 
 
 binfmt: $(__DEP_TOOLBOX)
 	$(call say,"Ensuring $(_QEMU_GUEST_ARCH) binfmt")
-	docker run --privileged --rm -t $(_TOOLBOX_IMAGE) /tools/install-binfmt \
-		--mount \
-		$(_QEMU_GUEST_ARCH) \
-		$(_QEMU_STATIC_GUEST_PATH)
+	docker run \
+			--rm \
+			--tty \
+			--privileged \
+		$(_TOOLBOX_IMAGE) /tools/install-binfmt \
+			--mount \
+			$(_QEMU_GUEST_ARCH) \
+			$(_QEMU_STATIC_GUEST_PATH)
 	$(call say,"Binfmt $(_QEMU_GUEST_ARCH) is ready")
 
 
 scan: $(__DEP_TOOLBOX)
 	$(call say,"Searching pies in the local network")
-	docker run --net=host --rm -t $(_TOOLBOX_IMAGE) arp-scan --localnet | grep b8:27:eb: || true
+	docker run \
+			--rm \
+			--tty \
+			--net host \
+		$(_TOOLBOX_IMAGE) arp-scan --localnet | grep b8:27:eb: || true
 
 
 os: $(__DEP_BINFMT) _buildctx
 	$(call say,"Building OS")
 	rm -f $(_BUILDED_IMAGE_CONFIG)
-	docker build $(BUILD_OPTS) \
+	docker build \
+			--rm \
+			--tag $(_RPI_RESULT_IMAGE) \
+			$(if $(TAG),--tag $(TAG),) \
 			$(if $(call optbool,$(NC)),--no-cache,) \
 			--build-arg "BOARD=$(BOARD)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
 			--build-arg "REBUILD=$(shell uuidgen)" \
-		--rm --tag $(_RPI_RESULT_IMAGE) $(if $(TAG),--tag $(TAG),) $(_BUILD_DIR)
+			$(BUILD_OPTS) \
+		$(_BUILD_DIR)
 	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILDED_IMAGE_CONFIG)
 	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILDED_IMAGE_CONFIG)
 	$(call show_running_config)
@@ -264,15 +284,20 @@ clean:
 
 
 __DOCKER_RUN_TMP = docker run \
-	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
-	-w /root/$(_TMP_DIR)/.. \
-	--rm -t $(_TOOLBOX_IMAGE)
+		--rm \
+		--tty \
+		--volume $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
+		--workdir /root/$(_TMP_DIR)/.. \
+	$(_TOOLBOX_IMAGE)
 
 
 __DOCKER_RUN_TMP_PRIVILEGED = docker run \
-	-v $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
-	-w /root/$(_TMP_DIR)/.. \
-	--privileged --rm -t $(_TOOLBOX_IMAGE)
+		--rm \
+		--tty \
+		--privileged \
+		--volume $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
+		--workdir /root/$(_TMP_DIR)/.. \
+	$(_TOOLBOX_IMAGE)
 
 
 clean-all: $(__DEP_TOOLBOX) clean
