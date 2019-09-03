@@ -167,7 +167,7 @@ shell: run
 
 toolbox:
 	$(call say,"Ensuring toolbox image")
-	docker build --rm --tag $(_TOOLBOX_IMAGE) toolbox -f toolbox/Dockerfile.root
+	docker build --rm --tag $(_TOOLBOX_IMAGE) $(if $(TAG),--tag $(TAG),) toolbox -f toolbox/Dockerfile.root
 	$(call say,"Toolbox image is ready")
 
 
@@ -195,7 +195,7 @@ os: $(__DEP_BINFMT) _buildctx
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
 			--build-arg "REBUILD=$(shell uuidgen)" \
-		--rm --tag $(_RPI_RESULT_IMAGE) $(_BUILD_DIR)
+		--rm --tag $(_RPI_RESULT_IMAGE) $(if $(TAG),--tag $(TAG),) $(_BUILD_DIR)
 	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILDED_IMAGE_CONFIG)
 	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILDED_IMAGE_CONFIG)
 	$(call show_running_config)
