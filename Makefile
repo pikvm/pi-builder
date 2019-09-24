@@ -30,7 +30,7 @@ STAGES ?= __init__ os pikvm-repo watchdog ro ssh-root ssh-keygen __cleanup__
 HOSTNAME ?= pi
 LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
-REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
+REPO_URL ?= http://de3.mirror.archlinuxarm.org
 BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
@@ -61,6 +61,7 @@ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	if [ '$(BOARD)' == rpi ]; then echo rpi; \
 	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
 	elif [ '$(BOARD)' == rpi3-x64 ]; then echo rpi-3; \
+	elif [ '$(BOARD)' == rpi4 ]; then echo rpi-4; \
 	else exit 1; \
 	fi \
 ")-latest.tar.gz
@@ -133,15 +134,15 @@ __DEP_TOOLBOX := $(if $(call optbool,$(PASS_ENSURE_TOOLBOX)),,toolbox)
 all:
 	@ echo
 	$(call say,"Available commands")
-	@ echo "    make                # Print this help"
-	@ echo "    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config"
-	@ echo "    make shell          # Run Arch-ARM shell"
-	@ echo "    make toolbox        # Build the toolbox image"
-	@ echo "    make binfmt         # Configure ARM binfmt on the host system"
-	@ echo "    make scan           # Find all RPi devices in the local network"
-	@ echo "    make clean          # Remove the generated rootfs"
-	@ echo "    make format         # Format $(CARD) to $(_CARD_BOOT) (vfat), $(_CARD_ROOT) (ext4)"
-	@ echo "    make install        # Install rootfs to partitions on $(CARD)"
+	@ echo "    make                     # Print this help"
+	@ echo "    make rpi|rpi2|rpi3|rpi4  # Build Arch-ARM rootfs with pre-defined config"
+	@ echo "    make shell               # Run Arch-ARM shell"
+	@ echo "    make toolbox             # Build the toolbox image"
+	@ echo "    make binfmt              # Configure ARM binfmt on the host system"
+	@ echo "    make scan                # Find all RPi devices in the local network"
+	@ echo "    make clean               # Remove the generated rootfs"
+	@ echo "    make format              # Format $(CARD) to $(_CARD_BOOT) (vfat), $(_CARD_ROOT) (ext4)"
+	@ echo "    make install             # Install rootfs to partitions on $(CARD)"
 	@ echo
 	$(call show_running_config)
 	@ echo
@@ -150,7 +151,8 @@ all:
 rpi: BOARD=rpi
 rpi2: BOARD=rpi2
 rpi3: BOARD=rpi3
-rpi rpi2 rpi3: os
+rpi4: BOARD=rpi4
+rpi rpi2 rpi3 rpi4: os
 
 
 run: $(__DEP_BINFMT)
@@ -198,7 +200,7 @@ scan: $(__DEP_TOOLBOX)
 			--rm \
 			--tty \
 			--net host \
-		$(_TOOLBOX_IMAGE) arp-scan --localnet | grep b8:27:eb: || true
+		$(_TOOLBOX_IMAGE) arp-scan --localnet | egrep "^b8:27:eb:|dc:a6:32:" || true
 
 
 os: $(__DEP_BINFMT) _buildctx

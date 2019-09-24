@@ -48,6 +48,8 @@ RUN pacman --noconfirm -Syy \
 			pacman --needed --noconfirm -S arm-mem-git linux-raspberrypi linux-raspberrypi-headers; \
 		elif [ "$BOARD" == "rpi3-x64" ]; then \
 			pacman --needed --noconfirm -S linux-aarch64 linux-aarch64-headers uboot-tools; \
+		elif [ "$BOARD" == "rpi4" ]; then \
+			pacman --needed --noconfirm -S arm-mem-git linux-raspberrypi4 linux-raspberrypi4-headers; \
 		else \
 			echo "Unknown board: $BOARD"; \
 			exit 1; \
