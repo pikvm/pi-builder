@@ -24,70 +24,67 @@ It's a new approach to target OS building on embedded devices. With it, you can 
 # How does it work?
 Arch Linux ARM developers (and other systems as well) provide [minimal root file systems] (https://mirror.yandex.ru/archlinux-arm/os/) you can install on a flash drive to run from. As those are regular roots, you can use them to create your own base Docker image using [FROM scratch](https://docs.docker.com/develop/develop-images/baseimages). This image, however, will contain executables and libraries for the `ARM` architecture, and if your machine is, eg., `x86_64`, none of the commands in this image will run.
 
-The Linux kernel has a special way to run binaries on a different architecture. You can configure [binfmt_misc] (https://en.wikipedia.org/wiki/Binfmt_misc) to run ARM binaries using an emulator (in this case, `qemu-arm-static` for `x86_64` ). Pi-builder has a [small script](https://github.com/pikvm/pi-builder/blob/master/tools/install-binfmt) thats sets up binfmt_misc on the host system to run ARM files.
+The Linux kernel has a special way to run binaries on a different architecture. You can configure [binfmt_misc] (https://en.wikipedia.org/wiki/Binfmt_misc) to run ARM binaries using an emulator (in this case, `qemu-arm-static` for `x86_64` ). Pi-builder has a [small script](https://github.com/pikvm/pi-builder/blob/master/tools/install-binfmt) that sets up binfmt_misc on the host system to run ARM files.
 
-In pi-builder, OS biulding is sepatated into **_stages_**, each of them being a different element of OS configuration. Fot example, the [ro](https://github.com/pikvm/pi-builder/tree/master/stages/ro) stage includes `Dockerfile.part` with all the nesessary instructions and configs to create a read-only root. A [watchdog](https://github.com/pikvm/pi-builder/tree/master/stages/watchdog)stage has everything needed to set up a watchdog with optimal parameters on Raspberry Pi.
+In pi-builder, OS building is separated into **_stages_**, each of them being a different element of OS configuration. For example, the [ro](https://github.com/pikvm/pi-builder/tree/master/stages/ro) stage includes `Dockerfile.part` with all the necessary instructions and configs to create a read-only root. A [watchdog](https://github.com/pikvm/pi-builder/tree/master/stages/watchdog)stage has everything needed to set up a watchdog with optimal parameters on Raspberry Pi.
 
-You can find a full list of stages pi-builder ships with [here](https://github.com/pikvm/pi-builder/tree/master/stages) or below. You can choose the stages you need to set up your system and include them to your config. Stages are basically pieces of docker file that are combined in said order and executed during biuld. You can create your own stages similar to the existing ones.
+You can find a full list of stages pi-builder ships with [here](https://github.com/pikvm/pi-builder/tree/master/stages) or below. You can choose the stages you need to set up your system and include them in your config. Stages are basically pieces of docker file that are combined in said order and executed during the build. You can create your own stages similar to the existing ones.
 
 Build sequence:
 1. pi-builder downloads statically compiled Debian `qemu-arm-static` and sets up `binfmt_misc` globally on your machine.
 2. The Arch Linux ARM image is downloaded and loaded into Docker as a base image.
-3. The container is build using the nesessary stages -- package installation, configuration, cleanup etc. 
+3. The container is build using the necessary stages -- package installation, configuration, cleanup, etc. 
 4. You can run `docker run` (or `make shell`) in the resulting container to check that everything's fine.
 5. Pi-builder's utility [docker-extract](https://github.com/pikvm/pi-builder/blob/master/tools/docker-extract) extracts the container from Docker's internal storage and moves to the directory, like an ordinary root file system.
-6. You can copy the resulting file system to the SD card and use it lo load Raspberry Pi.
+6. You can copy the resulting file system to the SD card and use it to load Raspberry Pi.
 
 -----
 # Usage
-To biuld with pi-builder you need a fresh Docker that cat 
+To build with pi-builder you need a fresh Docker that can run [privileged containers](https://docs.docker.com/engine/reference/commandline/run/#full-container-capabilities---privileged) (needed by [auxilary image](https://github.com/pikvm/pi-builder/blob/master/tools/Dockerfile.root) to install `binfmt_misc`, format SD card and some other operations).
 
-# Как этим пользоваться?
-Для сборки системы с помощью pi-builder вам понадобится свежий докер с возможностью запуска контейнера в [привелегированном режиме](https://docs.docker.com/engine/reference/commandline/run/#full-container-capabilities---privileged) (он требуется [вспомогательному образу](https://github.com/pikvm/pi-builder/blob/master/tools/Dockerfile.root) для установки `binfmt_misc`, форматирования SD-карты и некоторых других операций).
-
-Вся работа с pi-builder выполняется с помощью главного [Makefile](https://github.com/pikvm/pi-builder/blob/master/Makefile) в корне репозитория. В его начале перечислены параметры, доступные для переопределения, которое можно выполнить, создав файл `config.mk` с новыми значениями. Дефолтные значения таковы:
+Pi-builder does all its job using the main [Makefile](https://github.com/pikvm/pi-builder/blob/master/Makefile) on repository root. Parameters in the beginning can be changed, to do so create a file `config.mk` containing new values. Default values are:
 
 ```Makefile
-PROJECT ?= common  # Пространство имен для промежуточных образов, просто назовите как нравится
-BOARD ?= rpi  # Целевая платформа Raspberry Pi
-STAGES ?= __init__ os pikvm-repo watchdog ro ssh-root ssh-keygen __cleanup__  # Список необходимых стейжей, об этом подробнее ниже
+PROJECT ?= common  # Temporary images namespace, call in whatever you like
+BOARD ?= rpi  # Target Raspberry Pi platform
+STAGES ?= __init__ os pikvm-repo watchdog ro ssh-root ssh-keygen __cleanup__  # List of necessary stages, more on it below
 
-HOSTNAME ?= pi  # Имя хоста для получившейся системы
-LOCALE ?= en_US  # Локаль будущей системы (UTF-8)
-TIMEZONE ?= Europe/Moscow  # Таймзона будущей системы
-REPO_URL ?= http://mirror.yandex.ru/archlinux-arm  # Зеркало пакетов и всего загружаемого контента
-BUILD_OPTS ?=  # Всякие дополнительные опции для docker build
+HOSTNAME ?= pi  # Target system hostname
+LOCALE ?= en_US  # Target system locale (UTF-8)
+TIMEZONE ?= Europe/Moscow  # Target system timezone
+REPO_URL ?= http://mirror.yandex.ru/archlinux-arm  # Packages and other downloadable content mirror
+BUILD_OPTS ?=  # Other additional docker build options
 
-CARD ?= /dev/mmcblk0  # Путь к карте памяти
+CARD ?= /dev/mmcblk0  # Memory card location
 
 QEMU_PREFIX ?=
 QEMU_RM = 1
 ```
 
-Самые важные параметры - это `BOARD`, определяющий, под какую плату нужно собрать систему, `STAGES`, указывающий, какие стейжи необходимо включить и `CARD`, содержащий путь к устройству SD-карты. Вы можете переопределить их, передав новые значание вместе с вызовом `make`, или создав файл `config.mk` с новыми значениями.
+The most important parameters are `BOARD` (for which board should the system be built), `STAGES` (which stages should be included) and `CARD` (SD card directory). You can change them by either passing new parameters on running  `make`, or by creating a `config.mk` containing new values.
 
-Стейж `__init__` всегда должен идти первым: он содержит инициализирующие инструкции для создания базового образа системы (`FROM scratch`). Далее идут стейжи для "обживания" системы - установки полезных пакетов, настройки вачдога, приведения системы к ридонли, настройки ключей SSH для рута и очистки от временных файлов.
+The `__init__` stage must always be first: it has init instructions to create the base system image (`FROM scratch`). The following stages make the system "feel like home" -- by installing useful packages, setting up watchdog, making the system read-only, setting up root SSH keys and cleaning up temp files.
 
-Вы можете создать собственные стейжи и включить их в сборку наравне с комплектными. Для этого просто заведите каталог для вашего стейжа в папке `stages` и разместите в нем файл `Dockerfile.part` по аналогии с любым другим стейжем. Как вариант, можно сделать так, как это устроено в проекте [Pi-KVM](https://github.com/pikvm/pi-kvm/tree/master/os) (для которого, собственно, pi-builder и был разработан).
+You can create your own stages and add them to the build alongside stock ones. To do so, create a directory for your stage in the `stages` folder and place the `Dockerfile.part` file there, similar to other stages. Alternatively, you can follow the same path as [Pi-KVM](https://github.com/pikvm/pi-kvm/tree/master/os) (which was the first project pi-builder was made for).
 
 -----
-# Комплектные стейжи
-* `__init__` - главный стейж, формирующий базовый образ на основе корневой ФС Arch Linux ARM. Он ВСЕГДА должен идти первым в списке `STAGES`. 
-* `os` - просто ставит некоторые пакеты и настраивает систему, чтобы в ней было несколько более комфортно жить. Просто [посмотрите его содержимое](https://github.com/pikvm/pi-builder/tree/master/stages/os).
-* `ro` - превращает систему в ридонли-ось. В таком режиме Raspberry Pi можно просто выключать из розетки без предварительной подготовки, не боясь повредить файловоую систему. Для того, чтобы временно включить систему на запись (например, для обновления), используйте команду `rw`; после всех изменений выполните команду `ro` для обратного перемонтирования в ридонли.
-* `pikvm-repo` - добавляет ключ и репозиторий проекта [Pi-KVM](https://pikvm.org/repos). Нужно для вачдога, содержит другие дополнительные пакеты. Подключать не обязательно.
-* `watchdog` - настраивает аппаратный вачдог.
-* `ssh-root` - удаляет пользователя `alarm`, блокирует пароль `root` и добавляет в его `~/.ssh/authorized_keys` ключи из каталога [stages/ssh-root/pubkeys]. **По умолчанию там лежат ключи разработчика pi-builder, так что обязательно их замените**. Кроме того, этот стейж блокирует возможность логина через UART. Если вам требуется эта возможность, напишите свой собственный стейж с аналогичными функциями.
-* `ssh-keygen` - генерирует хостовые SSH-ключи. На этом стейже ВСЕГДА будет происходить пересборка системы. В обычной ситуации ручная генерация ключей не требуется, но если система загружается в ридонли, у SSH нет возможности сгенерировать ключи самостоятельно даже при первой загрузке.
-* `__cleanup__` - удаляет всякий мусор во временных папках, оставшийся от сборки.
+# Stock stages
+* `__init__` - the main stage that creates the base images based on root FS Arch Linux ARM. It should ALWAYS come first in the `STAGES` list. 
+* `os` - installs some packages and sets the system up a bit to make it more comfortable. You can [check what's inside](https://github.com/pikvm/pi-builder/tree/master/stages/os).
+* `ro` - makes the system a read-only OS. When run like this, you can simply unplug Raspberry Pi without proper shutting down, not being afraid to corrupt the file system. To temporary make the system writable (eg., to run an update), use the `rw` command. After applying all changes, run the `ro` again to remount the system as read-only.
+* `pikvm-repo` - adds the key and the [Pi-KVM](https://pikvm.org/repos) repo. It's needed for the watchdog, but it has other additional packages too. You can skip it.
+* `watchdog` - sets up the hardware watchdog.
+* `ssh-root` - removes the `alarm` user, blocks the `root` password and and keys from [stages/ssh-root/pubkeys] to the `~/.ssh/authorized_keys`. **This directory contains pi-builder's dev keys by default, make sure to change them!** This stage also disables UART login. In case you need it, you can create your own stages with similar functions.
+* `ssh-keygen` - generates host SSH keys. The system will be ALWAYS rebuilt on this stage. You don't usually need manual key generation, but in case the system is loaded as read-only, SSH can't generate its own keys on startup.
+* `__cleanup__` - cleans up temporary directories after build.
 
-# Ограничения
+# Limitations
 -----
-Некоторые файлы, такие как `/etc/host` и `/etc/hostname`, автоматически заполняются докером и все изменения, вносимые в них из докерфайла, будут потеряны. В случае с именем хоста в `Makefile` добавлен специальный костыль, которые записывает имя хоста в экспортируемую систему, или назначает это имя при запуске `make run`. Так что если вам потребуется изменить что-нибудь в подобных файлах, то придется дописать это аналогичным образом в `Makefile`.
+Some files, like `/etc/host` and `/etc/hostname`, are automatically filled by docker and all changes made from the docker file will be lost. For the hostname, there is a hack in the `Makefile` that writes the hostname to the exported system, or sets this name on `make run`. So in case you need to change something in those files, you'd have to add it to the `Makefile` the similar way.
 
 -----
 # TL;DR
-Как собрать систему под Raspberry Pi 3 и поставить ее на SD-карту:
+How to build a system for Raspberry Pi 3 and install it to the SD card:
 ```shell
 $ git clone https://github.com/pikvm/pi-builder
 $ cd pi-builder
@@ -95,12 +92,12 @@ $ make rpi3
 $ make install
 ```
 
-Как собрать систему со своим списком стейжей:
+How to build a system with your own stage list:
 ```shell
 $ make os BOARD=rpi3 STAGES="__init__ os __cleanup__"
 ```
 
-Остальные команды и заданную сборочную конфигурацию можно посмотреть так:
+You can see other commands and current build config like so:
 ```shell
 $ make
 
@@ -133,9 +130,9 @@ $ make
     QEMU_RM     = 1
 ```
 
-* **Важно**: проверьте в Makefile путь к SD-карте в переменнjq `CARD` и отключите автомонтирование, чтобы свежеотформатированная карта памяти не прицепилась к вашей системе, и скрипт установки не зафейлился.
-* **Очень важно**: положите в каталог [stages/ssh-root/pubkeys](https://github.com/pikvm/pi-builder/tree/master/stages/ssh-root/pubkeys) свой SSH-ключ, иначе не сможете потом залогиниться в систему, или не используйте стейж `ssh-root`.
-* **Еще более важно**: прочитайте весь этот README целиком, чтобы понимать, что и зачем вы все-таки делаете.
+* **Important**: Make sure the SD card directory is in the `CARD` variable in the Makefile and automount is off, or else the newly formatted SD card will be mounted to your system and setup script will fail.
+* **Very important**: Make sure your own SSH key is in the [stages/ssh-root/pubkeys](https://github.com/pikvm/pi-builder/tree/master/stages/ssh-root/pubkeys) directory, or else you won't be able to log in to your system. Alternatively, don't use the `ssh-root` stage.
+* **Most important**: Make sure to read the whole README to understand what you're doing.
 
 -----
 # Лицензия
