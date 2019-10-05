@@ -46,7 +46,6 @@ RUN pacman --noconfirm -Syy \
 		jshon \
 	&& case "$BOARD" in \
 			rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S arm-mem-git linux-raspberrypi linux-raspberrypi-headers;; \
-			rpi3-x64) pacman --needed --noconfirm -S linux-aarch64 linux-aarch64-headers uboot-tools;; \
 			rpi4) pacman --needed --noconfirm -S arm-mem-git linux-raspberrypi4 linux-raspberrypi4-headers;; \
 			*) echo "Unknown board: $BOARD"; exit 1;; \
 		esac \

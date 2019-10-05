@@ -1,10 +1,6 @@
 # Based on https://gist.github.com/yeokm1/8b0ffc03e622ce011010
 
-RUN case "$BOARD" in \
-		rpi|rpi2|rpi3|rpi4|zero|zerow) sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt;; \
-		rpi3-x64) sed -i -e "s| \<rw\> | ro |g" /boot/boot.txt && /boot/mkscr;; \
-		*) echo "Unknown board: $BOARD"; exit 1;; \
-	esac
+RUN sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
 
 RUN mkdir -p /var/lib/private \
 	&& chmod 700 /var/lib/private

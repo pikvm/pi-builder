@@ -47,11 +47,7 @@ _TMP_DIR = ./.tmp
 _BUILD_DIR = ./.build
 _BUILDED_IMAGE_CONFIG = ./.builded.conf
 
-_QEMU_GUEST_ARCH = $(shell bash -c " \
-	if [ '$(BOARD)' == rpi3-x64 ]; then echo aarch64; \
-	else echo arm; \
-	fi \
-")
+_QEMU_GUEST_ARCH = arm
 _QEMU_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
 _QEMU_COLLECTION = $(_TMP_DIR)/qemu
 _QEMU_STATIC = $(_QEMU_COLLECTION)/qemu-$(_QEMU_GUEST_ARCH)-static
@@ -60,7 +56,6 @@ _QEMU_STATIC_GUEST_PATH ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_GUEST_ARCH)-static
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	if [ '$(BOARD)' == rpi -o '$(BOARD)' == zero -o '$(BOARD)' == zerow ]; then echo rpi; \
 	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
-	elif [ '$(BOARD)' == rpi3-x64 ]; then echo rpi-3; \
 	elif [ '$(BOARD)' == rpi4 ]; then echo rpi-4; \
 	else exit 1; \
 	fi \
