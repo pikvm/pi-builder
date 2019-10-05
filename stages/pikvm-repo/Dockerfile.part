@@ -1,3 +1,8 @@
 RUN pacman-key -r 912C773ABBD1B584 \
 	&& pacman-key --lsign-key 912C773ABBD1B584 \
-	&& echo -e "[pikvm]\nServer = https://pikvm.org/repos/$BOARD\nSigLevel = Required DatabaseOptional" >> /etc/pacman.conf
+	&& echo -e "\n[pikvm]" >> /etc/pacman.conf \
+	&& case "$BOARD" in \
+			zero|zerow) echo "Server = https://pikvm.org/repos/rpi" >> /etc/pacman.conf;; \
+			*) echo "Server = https://pikvm.org/repos/$BOARD" >> /etc/pacman.conf;; \
+		esac \
+	&& echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf
