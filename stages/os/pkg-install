@@ -3,7 +3,7 @@ if [ `whoami` != root ]; then
 	echo "Only root can do that"
 	exit 1
 fi
-pacman --noconfirm -Syy && pacman --noconfirm --needed -S $@
+pacman --noconfirm -Syu && pacman --noconfirm --needed -S $@
 retval=$?
 pacman --noconfirm -Sc
 exit $retval
