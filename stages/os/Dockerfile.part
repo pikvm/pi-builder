@@ -51,7 +51,7 @@ RUN pacman --noconfirm -Syy \
 		esac \
 	&& (pacman --noconfirm -Sc || true)
 
-RUN sed -i -e "s/#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
+RUN sed -i -e "s/^#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
 
 RUN echo "LLMNR=no" >> /etc/systemd/resolved.conf
 
