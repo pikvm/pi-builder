@@ -34,6 +34,9 @@ REPO_URL ?= http://de3.mirror.archlinuxarm.org
 BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
+CARD_DATA_FS_TYPE ?=
+CARD_DATA_FS_FLAGS ?= -m 0
+CARD_DATA_BEGIN_AT ?= 4352MiB
 
 QEMU_PREFIX ?= /usr
 QEMU_RM ?= 1
@@ -68,7 +71,8 @@ _RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
 
 _CARD_P = $(if $(findstring mmcblk,$(CARD)),p,$(if $(findstring loop,$(CARD)),p,))
 _CARD_BOOT = $(CARD)$(_CARD_P)1
-_CARD_ROOT = $(CARD)$(_CARD_P)2
+_CARD_ROOTFS = $(CARD)$(_CARD_P)2
+_CARD_DATA = $(CARD)$(_CARD_P)3
 
 
 # =====
@@ -108,8 +112,6 @@ $(call say,"Running configuration")
 @ echo "    REPO_URL   = $(REPO_URL)"
 @ echo
 @ echo "    CARD = $(CARD)"
-@ echo "           |-- boot: $(_CARD_BOOT)"
-@ echo "           +-- root: $(_CARD_ROOT)"
 @ echo
 @ echo "    QEMU_PREFIX = $(QEMU_PREFIX)"
 @ echo "    QEMU_RM     = $(QEMU_RM)"
@@ -136,7 +138,7 @@ all:
 	@ echo "    make binfmt              # Configure ARM binfmt on the host system"
 	@ echo "    make scan                # Find all RPi devices in the local network"
 	@ echo "    make clean               # Remove the generated rootfs"
-	@ echo "    make format              # Format $(CARD) to $(_CARD_BOOT) (vfat), $(_CARD_ROOT) (ext4)"
+	@ echo "    make format              # Format $(CARD)"
 	@ echo "    make install             # Install rootfs to partitions on $(CARD)"
 	@ echo
 	$(call show_running_config)
@@ -317,15 +319,17 @@ format: $(__DEP_TOOLBOX)
 		set -x \
 		&& set -e \
 		&& parted $(CARD) -s mklabel msdos \
-		&& parted $(CARD) -a optimal -s mkpart primary fat32 0% 128MiB \
-		&& parted $(CARD) -s mkpart primary 128MiB 100% \
+		&& parted $(CARD) -a optimal -s mkpart primary fat32 0% 256MiB \
+		&& parted $(CARD) -a optimal -s mkpart primary ext4 256MiB $(if $(CARD_DATA_FS_TYPE),$(CARD_DATA_BEGIN_AT),100%) \
+		&& $(if $(CARD_DATA_FS_TYPE),parted $(CARD) -a optimal -s mkpart primary $(CARD_DATA_FS_TYPE) $(CARD_DATA_BEGIN_AT) 100%,/bin/true) \
 		&& partprobe $(CARD) \
 	"
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
 		&& set -e \
-		&& mkfs.vfat $(_CARD_BOOT) \
-		&& yes | mkfs.ext4 $(_CARD_ROOT) \
+		&& yes | mkfs.vfat $(_CARD_BOOT) \
+		&& yes | mkfs.ext4 $(_CARD_ROOTFS) \
+		&& $(if $(CARD_DATA_FS_TYPE),yes | mkfs.$(CARD_DATA_FS_TYPE) $(CARD_DATA_FS_FLAGS) $(_CARD_DATA),/bin/true) \
 	"
 	$(call say,"Format complete")
 
@@ -348,7 +352,7 @@ install: extract format
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		mkdir -p mnt/boot mnt/rootfs \
 		&& mount $(_CARD_BOOT) mnt/boot \
-		&& mount $(_CARD_ROOT) mnt/rootfs \
+		&& mount $(_CARD_ROOTFS) mnt/rootfs \
 		&& rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/boot/* mnt/boot \
 		&& rsync -a --info=progress2 $(_RPI_RESULT_ROOTFS)/* mnt/rootfs --exclude boot \
 		&& mkdir mnt/rootfs/boot \
