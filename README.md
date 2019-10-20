@@ -13,7 +13,7 @@ A common solution is to create a large and horrifying shell script that executes
 
 -----
 # What is pi-builder?
-It's a new approach to target OS building on embedded devices. With pi-builder, you can build an image as if it was a simple Docker container rather than a real-world device OS. The build process is described using the default [docker file (https://docs.docker.com/engine/reference/builder) syntax and it's executed in Docker on your dev machine. The resulting image can be exported to the SD card and loaded directly to Raspberry Pi.
+It's a new approach to target OS building on embedded devices. With pi-builder, you can build an image as if it was a simple Docker container rather than a real-world device OS. The build process is described using the default [docker file](https://docs.docker.com/engine/reference/builder) syntax and it's executed in Docker on your dev machine. The resulting image can be exported to the SD card and loaded directly to Raspberry Pi.
 
 -----
 # Why pi-builder?
