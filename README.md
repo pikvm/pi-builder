@@ -1,6 +1,6 @@
-[README in Russian](https://github.com/pikvm/pi-builder/blob/master/README.md)
-
 # pi-builder
+[[Русская версия]](README.ru.md)
+
 pi-builder is an easy-to-use and extendable tool to build [Arch Linux ARM](https://archlinuxarm.org) for Raspberry Pi using [Docker](https://www.docker.com).
 
 -----
@@ -49,7 +49,7 @@ Pi-builder is configured by the main [Makefile](https://github.com/pikvm/pi-buil
 ```Makefile
 PROJECT ?= common  # Temporary images namespace, call in whatever you like
 BOARD ?= rpi  # Target Raspberry Pi platform
-STAGES ?= __init__ os pikvm-repo watchdog ro ssh-root ssh-keygen __cleanup__  # List of necessary stages, more on it below
+STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth ro ssh-keygen __cleanup__  # List of necessary stages, more on it below
 
 HOSTNAME ?= pi  # Target system hostname
 LOCALE ?= en_US  # Target system locale (UTF-8)
@@ -76,6 +76,7 @@ You can create your own stages and add them to the build alongside stock ones. T
 * `ro` - makes the system a read-only OS. When run like this, you can simply unplug Raspberry Pi without shutting it down properly, without the risk of corrupting the file system. To temporary make the system writable (eg., to install updates), use the `rw` command. After applying all changes, run `ro` again to remount the system as read-only.
 * `pikvm-repo` - adds the key and the [Pi-KVM](https://pikvm.org/repos) repo. It's needed for the watchdog, but it has other useful packages too. You can skip this stage.
 * `watchdog` - sets up the hardware watchdog.
+* `no-bluetooth` - disables the Bluetooth device and restores UART0/ttyAMA0 to GPIOs 14 and 15.
 * `ssh-root` - removes the `alarm` user, blocks the `root` password and and keys from [stages/ssh-root/pubkeys](https://github.com/pikvm/pi-builder/tree/master/stages/ssh-root/pubkeys) to the `~/.ssh/authorized_keys`. **This directory contains pi-builder dev's keys by default, make sure to change them!** This stage also disables UART login. In case you need it, you can create your own stage with similar functions.
 * `ssh-keygen` - generates host SSH keys. The system will ALWAYS be rebuilt on this stage. You don't usually need manual key generation, but in case the system is loaded as read-only, SSH can't generate its own keys on startup.
 * `__cleanup__` - cleans up temporary directories after build.
@@ -105,7 +106,7 @@ $ make
 
 ===== Available commands  =====
     make                # Print this help
-    make rpi|rpi2|rpi3  # Build Arch-ARM rootfs with pre-defined config
+    rpi|rpi2|rpi3|rpi4|zero|zerow  # Build Arch-ARM rootfs with pre-defined config
     make shell          # Run Arch-ARM shell
     make binfmt         # Before build
     make scan           # Find all RPi devices in the local network
@@ -116,7 +117,7 @@ $ make
 ===== Running configuration =====
     PROJECT = common
     BOARD   = rpi
-    STAGES  = __init__ os watchdog ro ssh-root ssh-keygen __cleanup__
+    STAGES  = __init__ os watchdog no-bluetooth ro ssh-keygen __cleanup__
 
     BUILD_OPTS =
     HOSTNAME   = pi
@@ -125,8 +126,6 @@ $ make
     REPO_URL   = http://mirror.yandex.ru/archlinux-arm
 
     CARD = /dev/mmcblk0
-           |-- boot: /dev/mmcblk0p1
-           +-- root: /dev/mmcblk0p2
 
     QEMU_PREFIX =
     QEMU_RM     = 1
