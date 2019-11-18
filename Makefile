@@ -199,7 +199,7 @@ scan: $(__DEP_TOOLBOX)
 			--rm \
 			--tty \
 			--net host \
-		$(_TOOLBOX_IMAGE) arp-scan --localnet | egrep "^b8:27:eb:|dc:a6:32:" || true
+		$(_TOOLBOX_IMAGE) arp-scan --localnet | grep -Pi "\s(b8:27:eb:|dc:a6:32:)" || true
 
 
 os: $(__DEP_BINFMT) _buildctx
