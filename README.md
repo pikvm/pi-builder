@@ -47,20 +47,26 @@ To build with pi-builder you need a fresh Docker that can run [privileged contai
 Pi-builder is configured by the main [Makefile](https://github.com/pikvm/pi-builder/blob/master/Makefile) in the repository root. You can change parameters in the beginning, to do so create a file `config.mk` with new values. Default values are:
 
 ```Makefile
-PROJECT ?= common  # Temporary images namespace, call in whatever you like
-BOARD ?= rpi  # Target Raspberry Pi platform
-STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth ro ssh-keygen __cleanup__  # List of necessary stages, more on it below
+# Temporary images namespace, call in whatever you like
+PROJECT ?= common
 
-HOSTNAME ?= pi  # Target system hostname
-LOCALE ?= en_US  # Target system locale (UTF-8)
-TIMEZONE ?= Europe/Moscow  # Target system timezone
-REPO_URL ?= http://mirror.yandex.ru/archlinux-arm  # Packages and other downloadable content mirror
-BUILD_OPTS ?=  # Other additional docker build options
+# Target Raspberry Pi platform
+BOARD ?= rpi
 
-CARD ?= /dev/mmcblk0  # Memory card location
+# List of necessary stages, more on it below
+STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth ro ssh-keygen __cleanup__
 
-QEMU_PREFIX ?=
-QEMU_RM = 1
+# Target system hostname
+HOSTNAME ?= pi
+
+# Target system locale (UTF-8)
+LOCALE ?= en_US
+
+# Target system timezone
+TIMEZONE ?= Europe/Moscow
+
+# Memory card location
+CARD ?= /dev/mmcblk0
 ```
 
 The most important parameters are `BOARD` (which board should the system be built for), `STAGES` (which stages should be included) and `CARD` (the SD card directory). You can change them by either passing new parameters when you run `make`, or by creating a `config.mk` with new values.
