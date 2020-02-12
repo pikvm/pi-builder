@@ -25,7 +25,7 @@
 
 PROJECT ?= common
 BOARD ?= rpi
-STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth ro ssh-keygen __cleanup__
+STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth no-audit ro ssh-keygen __cleanup__
 
 HOSTNAME ?= pi
 LOCALE ?= en_US

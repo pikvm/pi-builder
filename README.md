@@ -54,7 +54,7 @@ PROJECT ?= common
 BOARD ?= rpi
 
 # List of necessary stages, more on it below
-STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth ro ssh-keygen __cleanup__
+STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth no-audit ro ssh-keygen __cleanup__
 
 # Target system hostname
 HOSTNAME ?= pi
@@ -83,6 +83,7 @@ You can create your own stages and add them to the build alongside stock ones. T
 * `pikvm-repo` - adds the key and the [Pi-KVM](https://pikvm.org/repos) repo. It's needed for the watchdog, but it has other useful packages too. You can skip this stage.
 * `watchdog` - sets up the hardware watchdog.
 * `no-bluetooth` - disables the Bluetooth device and restores UART0/ttyAMA0 to GPIOs 14 and 15.
+* `no-audit` - disables [Kernel audit](https://wiki.archlinux.org/index.php/Audit_framework).
 * `ssh-root` - removes the `alarm` user, blocks the `root` password and and keys from [stages/ssh-root/pubkeys](https://github.com/pikvm/pi-builder/tree/master/stages/ssh-root/pubkeys) to the `~/.ssh/authorized_keys`. **This directory contains pi-builder dev's keys by default, make sure to change them!** This stage also disables UART login. In case you need it, you can create your own stage with similar functions.
 * `ssh-keygen` - generates host SSH keys. The system will ALWAYS be rebuilt on this stage. You don't usually need manual key generation, but in case the system is loaded as read-only, SSH can't generate its own keys on startup.
 * `__cleanup__` - cleans up temporary directories after build.
