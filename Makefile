@@ -30,7 +30,7 @@ STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth no-audit ro ssh-keygen __
 HOSTNAME ?= pi
 LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
-REPO_URL ?= http://de3.mirror.archlinuxarm.org
+REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
 BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
