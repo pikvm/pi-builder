@@ -91,7 +91,7 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
 
                     elif "/.wh." in member_path:
                         whiteout = member_path.replace("/.wh.", "/")
-                        if os.path.isdir(whiteout):
+                        if os.path.isdir(whiteout) and not os.path.islink(whiteout):
                             _logger.debug("::    Removing whiteout dir: %s", whiteout)
                             shutil.rmtree(whiteout)
                         else:
