@@ -53,6 +53,7 @@ RUN pacman --noconfirm -Syy \
 
 RUN sed -i -e "s/^#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
 
+RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf
 RUN systemctl enable systemd-resolved
 
 COPY stages/os/gitconfig /etc/skel/.gitconfig
