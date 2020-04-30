@@ -11,6 +11,7 @@ RUN rm -rf \
 		/home/*/.bash_history \
 		/home/*/.cache \
 		/usr/local/bin/pkg-install \
+		/usr/local/lib/libpreload-semop.so \
 	`LC_ALL=C pacman -Qo /var/cache/* 2>&1 | grep 'error: No package owns' | awk '{print $5}'`
 
 RUN sed -i -e "s/^#!!!CheckSpace/CheckSpace/g" /etc/pacman.conf
