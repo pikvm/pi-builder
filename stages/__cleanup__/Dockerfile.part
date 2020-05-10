@@ -17,3 +17,5 @@ RUN sed -i -e "s/^#!!!CheckSpace/CheckSpace/g" /etc/pacman.conf
 RUN rm -f \
 	/usr/local/bin/pkg-install \
 	/usr/local/lib/libpreload-semop.so
+
+ENV LD_PRELOAD=
