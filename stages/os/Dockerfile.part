@@ -44,6 +44,7 @@ RUN pacman --noconfirm -Syy \
 		lsof \
 		git \
 		jshon \
+		rng-tools \
 	&& case "$BOARD" in \
 			rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
 			rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
@@ -51,14 +52,18 @@ RUN pacman --noconfirm -Syy \
 		esac \
 	&& (pacman --noconfirm -Sc || true)
 
+RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng"' > /etc/conf.d/rngd \
+	&& systemctl disable haveged \
+	&& systemctl enable rngd
+
 COPY stages/os/semop-wrapper.c /tmp
 RUN gcc -fPIC -shared -o /usr/local/lib/libpreload-semop.so /tmp/semop-wrapper.c
 ENV LD_PRELOAD=/usr/local/lib/libpreload-semop.so
 
 RUN sed -i -e "s/^#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
 
-RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf
-RUN systemctl enable systemd-resolved
+RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf \
+	&& systemctl enable systemd-resolved
 
 COPY stages/os/gitconfig /etc/skel/.gitconfig
 COPY stages/os/gitconfig /root/.gitconfig
