@@ -53,7 +53,7 @@ _BUILDED_IMAGE_CONFIG = ./.builded.conf
 
 _QEMU_GUEST_ARCH = arm
 _QEMU_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
-_QEMU_COLLECTION = $(_TMP_DIR)/qemu
+_QEMU_COLLECTION = qemu
 _QEMU_STATIC = $(_QEMU_COLLECTION)/qemu-$(_QEMU_GUEST_ARCH)-static
 _QEMU_STATIC_GUEST_PATH ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_GUEST_ARCH)-static
 
@@ -225,7 +225,7 @@ os: $(__DEP_BINFMT) _buildctx
 
 
 # =====
-_buildctx: _rpi_base_rootfs_tgz $(_QEMU_COLLECTION)
+_buildctx: _rpi_base_rootfs_tgz
 	$(call say,"Assembling main Dockerfile")
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
@@ -275,7 +275,6 @@ $(_QEMU_COLLECTION):
 	rm -rf $(_QEMU_COLLECTION).tmp
 	mkdir $(_QEMU_COLLECTION).tmp
 	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $(_QEMU_COLLECTION).tmp
-	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-aarch64-static $(_QEMU_COLLECTION).tmp
 	mv $(_QEMU_COLLECTION).tmp $(_QEMU_COLLECTION)
 	$(call say,"QEMU ready")
 
