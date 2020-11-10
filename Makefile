@@ -82,17 +82,17 @@ $(filter $(shell echo $(1) | tr A-Z a-z),yes on 1)
 endef
 
 define say
-@ tput bold
-@ tput setaf 2
+@ tput -Txterm bold
+@ tput -Txterm setaf 2
 @ echo "===== $1 ====="
-@ tput sgr0
+@ tput -Txterm sgr0
 endef
 
 define die
-@ tput bold
-@ tput setaf 1
+@ tput -Txterm bold
+@ tput -Txterm setaf 1
 @ echo "===== $1 ====="
-@ tput sgr0
+@ tput -Txterm sgr0
 @ exit 1
 endef
 
