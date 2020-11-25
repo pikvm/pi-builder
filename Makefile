@@ -119,7 +119,7 @@ $(call say,"Running configuration")
 endef
 
 define check_build
-$(if $(wildcard $(_BUILDED_IMAGE_CONFIG)),,$(call die,"Not builded yet"))
+$(if $(wildcard $(_BUILDED_IMAGE_CONFIG)),,$(call die,"Not built yet"))
 endef
 
 
@@ -195,7 +195,7 @@ binfmt: $(__DEP_TOOLBOX)
 
 
 scan: $(__DEP_TOOLBOX)
-	$(call say,"Searching pies in the local network")
+	$(call say,"Searching for Pis in the local network")
 	docker run \
 			--rm \
 			--tty \
