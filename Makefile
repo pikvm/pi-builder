@@ -63,6 +63,7 @@ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	elif [[ '$(BOARD)' =~ rpi ]] && [ '$(ARCH)' == aarch64 ]; then echo 'rpi-aarch64'; \
 	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
 	elif [ '$(BOARD)' == rpi4 ]; then echo rpi-4; \
+	elif [ '$(BOARD)' == rock64 -a '$(ARCH)' == aarch64 ]; then echo 'aarch64'; \
 	else exit 1; \
 	fi \
 ")-latest.tar.gz
@@ -155,7 +156,8 @@ rpi3: BOARD=rpi3
 rpi4: BOARD=rpi4
 zero: BOARD=zero
 zerow: BOARD=zerow
-rpi rpi2 rpi3 rpi4 zero zerow: os
+rock64: BOARD=rock64
+rpi rpi2 rpi3 rpi4 zero zerow rock64: os
 
 
 run: $(__DEP_BINFMT)
