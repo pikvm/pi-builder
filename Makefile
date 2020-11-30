@@ -60,8 +60,8 @@ _QEMU_STATIC_GUEST_PATH ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_GUEST_ARCH)-static
 
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	if [ '$(BOARD)' == rpi -o '$(BOARD)' == zero -o '$(BOARD)' == zerow ]; then echo rpi; \
+	elif [[ '$(BOARD)' =~ rpi ]] && [ '$(ARCH)' == aarch64 ]; then echo 'rpi-aarch64'; \
 	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
-	elif [ '$(BOARD)' == rpi4 -a '$(ARCH)' == aarch64 ]; then echo 'rpi-aarch64'; \
 	elif [ '$(BOARD)' == rpi4 ]; then echo rpi-4; \
 	else exit 1; \
 	fi \
