@@ -46,10 +46,15 @@ RUN pacman --noconfirm -Syy \
 		jshon \
 		rng-tools \
 		bc \
-	&& case "$BOARD" in \
-			rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
-			rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
-			*) echo "Unknown board: $BOARD"; exit 1;; \
+	&& 	case "$ARCH" in \
+			arm) \
+				case "$BOARD" in \
+					rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
+					rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
+					*) echo "Unknown board: $BOARD"; exit 1;; \
+				esac ;; \
+			aarch64) pacman --needed --noconfirm -S linux-aarch64-headers ;; \
+			*) echo "Unknown architecture: $ARCH"; exit 1;; \
 		esac \
 	&& (pacman --noconfirm -Sc || true)
 
