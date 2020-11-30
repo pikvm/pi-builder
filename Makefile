@@ -265,7 +265,7 @@ $(_QEMU_COLLECTION):
 	curl -L -f $(_QEMU_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_STATIC_BASE_URL)/ \
 			-z $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
 				| grep qemu-user-static \
-				| grep _i386.deb \
+				| grep _$(if $(filter-out aarch64,$(ARCH)),i386,amd64).deb \
 				| sort -n \
 				| tail -n 1 \
 				| sed -n 's/.*href="\([^"]*\).*/\1/p'` \
@@ -276,7 +276,7 @@ $(_QEMU_COLLECTION):
 		&& tar -xJf data.tar.xz
 	rm -rf $(_QEMU_COLLECTION).tmp
 	mkdir $(_QEMU_COLLECTION).tmp
-	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-arm-static $(_QEMU_COLLECTION).tmp
+	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-$(ARCH)-static $(_QEMU_COLLECTION).tmp
 	mv $(_QEMU_COLLECTION).tmp $(_QEMU_COLLECTION)
 	$(call say,"QEMU ready")
 
