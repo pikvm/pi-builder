@@ -106,6 +106,7 @@ define show_running_config
 $(call say,"Running configuration")
 @ echo "    PROJECT = $(PROJECT)"
 @ echo "    BOARD   = $(BOARD)"
+@ echo "    ARCH    = $(ARCH)"
 @ echo "    STAGES  = $(STAGES)"
 @ echo
 @ echo "    BUILD_OPTS = $(BUILD_OPTS)"
@@ -214,6 +215,7 @@ os: $(__DEP_BINFMT) _buildctx
 			$(if $(TAG),--tag $(TAG),) \
 			$(if $(call optbool,$(NC)),--no-cache,) \
 			--build-arg "BOARD=$(BOARD)" \
+			--build-arg "ARCH=$(ARCH)" \
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
