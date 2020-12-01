@@ -1,0 +1,5 @@
+COPY stages/boot /tmp/
+RUN [ ! -d /tmp/boot/boot-$(BOARD)-$(ARCH) ] || cp -a /tmp/boot/boot-($BOARD)-($ARCH)/* /boot/
+RUN [ ! -f /boot/mkscr ] || ( pacman --noconfirm --needed -S uboot-tools && cd /boot && /boot/mkscr )
+RUN ls -la /boot
+RUN rm -rf /tmp/boot
