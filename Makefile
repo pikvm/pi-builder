@@ -318,14 +318,14 @@ format: $(__DEP_TOOLBOX)
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
 		&& set -e \
-		&& dd if=/dev/zero of=$(CARD) bs=512 count=1 \
+		&& dd if=/dev/zero of=$(CARD) bs=1M count=32 \
 		&& partprobe $(CARD) \
 	"
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
 		&& set -e \
 		&& parted $(CARD) -s mklabel msdos \
-		&& parted $(CARD) -a optimal -s mkpart primary fat32 0% 256MiB \
+		&& parted $(CARD) -a optimal -s mkpart primary fat32 $(if $(findstring rock,$(BOARD)),32MiB,0) 256MiB \
 		&& parted $(CARD) -a optimal -s mkpart primary ext4 256MiB $(if $(CARD_DATA_FS_TYPE),$(CARD_DATA_BEGIN_AT),100%) \
 		&& $(if $(CARD_DATA_FS_TYPE),parted $(CARD) -a optimal -s mkpart primary $(CARD_DATA_FS_TYPE) $(CARD_DATA_BEGIN_AT) 100%,/bin/true) \
 		&& partprobe $(CARD) \
@@ -364,7 +364,17 @@ install: extract format
 		&& mkdir mnt/rootfs/boot \
 		&& umount mnt/boot mnt/rootfs \
 	"
-	$(call say,"Installation complete")
+ifeq ($(BOARD),rock64)
+	wget http://os.archlinuxarm.org/os/rockchip/boot/rock64/rksd_loader.img -O $(_TMP_DIR)/rksd_loader.img
+	wget http://os.archlinuxarm.org/os/rockchip/boot/rock64/u-boot.itb -O $(_TMP_DIR)/u-boot.itb
+	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
+		set -x \
+		&& set -e \
+		&& dd if=./.tmp/rksd_loader.img of=$(CARD) seek=64 conv=notrunc \
+		&& dd if=./.tmp/u-boot.itb of=$(CARD) seek=16384 conv=notrunc \
+	"
+endif
+	$(call say,"Installation complete")	
 
 
 .PHONY: toolbox
