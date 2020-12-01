@@ -33,6 +33,8 @@ LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
 #REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
 REPO_URL = http://de3.mirror.archlinuxarm.org
+PIKVM_REPO_URL ?= https://pikvm.org/repos
+PIKVM_REPO_KEY ?= 912C773ABBD1B584
 BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
@@ -115,6 +117,8 @@ $(call say,"Running configuration")
 @ echo "    LOCALE     = $(LOCALE)"
 @ echo "    TIMEZONE   = $(TIMEZONE)"
 @ echo "    REPO_URL   = $(REPO_URL)"
+@ echo "    PIKVM_REPO_URL   = $(PIKVM_REPO_URL)"
+@ echo "    PIKVM_REPO_KEY   = $(PIKVM_REPO_URL)"
 @ echo
 @ echo "    CARD = $(CARD)"
 @ echo
@@ -221,6 +225,8 @@ os: $(__DEP_BINFMT) _buildctx
 			--build-arg "LOCALE=$(LOCALE)" \
 			--build-arg "TIMEZONE=$(TIMEZONE)" \
 			--build-arg "REPO_URL=$(REPO_URL)" \
+			--build-arg "PIKVM_REPO_URL=$(PIKVM_REPO_URL)" \
+			--build-arg "PIKVM_REPO_KEY=$(PIKVM_REPO_KEY)" \
 			--build-arg "REBUILD=$(shell uuidgen)" \
 			$(BUILD_OPTS) \
 		$(_BUILD_DIR)
