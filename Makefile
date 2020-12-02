@@ -65,8 +65,8 @@ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	elif [[ '$(BOARD)' =~ rpi ]] && [ '$(ARCH)' == aarch64 ]; then echo 'rpi-aarch64'; \
 	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
 	elif [ '$(BOARD)' == rpi4 ]; then echo rpi-4; \
-	elif [ '$(BOARD)' == rock64 -a '$(ARCH)' == aarch64 ]; then echo 'aarch64'; \
-	else exit 1; \
+	elif [ '$(ARCH)' == aarch64 ]; then echo 'aarch64'; \
+	else echo 'arm7'; \
 	fi \
 ")-latest.tar.gz
 _RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs-$(BOARD).tar.gz
@@ -160,8 +160,8 @@ rpi3: BOARD=rpi3
 rpi4: BOARD=rpi4
 zero: BOARD=zero
 zerow: BOARD=zerow
-rock64: BOARD=rock64
-rpi rpi2 rpi3 rpi4 zero zerow rock64: os
+generic: BOARD=generic
+rpi rpi2 rpi3 rpi4 zero zerow generic: os
 
 
 run: $(__DEP_BINFMT)
@@ -331,7 +331,7 @@ format: $(__DEP_TOOLBOX)
 		set -x \
 		&& set -e \
 		&& parted $(CARD) -s mklabel msdos \
-		&& parted $(CARD) -a optimal -s mkpart primary fat32 $(if $(findstring rock,$(BOARD)),32MiB,0) 256MiB \
+		&& parted $(CARD) -a optimal -s mkpart primary fat32 $(if $(findstring generic,$(BOARD)),32MiB,0) 256MiB \
 		&& parted $(CARD) -a optimal -s mkpart primary ext4 256MiB $(if $(CARD_DATA_FS_TYPE),$(CARD_DATA_BEGIN_AT),100%) \
 		&& $(if $(CARD_DATA_FS_TYPE),parted $(CARD) -a optimal -s mkpart primary $(CARD_DATA_FS_TYPE) $(CARD_DATA_BEGIN_AT) 100%,/bin/true) \
 		&& partprobe $(CARD) \
