@@ -66,7 +66,7 @@ _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
 	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
 	elif [ '$(BOARD)' == rpi4 ]; then echo rpi-4; \
 	elif [ '$(ARCH)' == aarch64 ]; then echo 'aarch64'; \
-	else echo 'arm7'; \
+	else echo 'armv7'; \
 	fi \
 ")-latest.tar.gz
 _RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs-$(BOARD).tar.gz
