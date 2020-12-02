@@ -1,19 +1,17 @@
 # After modifying, run ./mkscr
 
-# MAC address (use spaces instead of colons)
-setenv macaddr da 19 fe 17 84 02
-setenv ramdisk_addr_r 0x06000000
+# MAC address
+env set -f ethaddr a2:c3:5a:78:d1:01
 
 part uuid ${devtype} ${devnum}:2 uuid
 setenv bootargs console=ttyS2,1500000 root=PARTUUID=${uuid} rw rootwait earlycon=uart8250,mmio32,0xff130000
 setenv fdtfile rockchip/rk3328-rock64.dtb
-
+setenv ramdisk_addr_r 0x06000000
 if load ${devtype} ${devnum}:${bootpart} ${kernel_addr_r} /Image; then
   if load ${devtype} ${devnum}:${bootpart} ${fdt_addr_r} /dtbs/${fdtfile}; then
     fdt addr ${fdt_addr_r}
     fdt resize
     fdt set /usb@ff580000 dr_mode "peripheral"
-    fdt set /ethernet@ff540000 local-mac-address "[${macaddr}]"
     if load ${devtype} ${devnum}:${bootpart} ${ramdisk_addr_r} /initramfs-linux.img; then
       booti ${kernel_addr_r} ${ramdisk_addr_r}:${filesize} ${fdt_addr_r};
     else
