@@ -372,16 +372,17 @@ install: extract format
 		&& umount mnt/boot mnt/rootfs \
 	"
 ifneq ($(UBOOT),)
-	$(call install-uboot)
+	install-uboot
 endif
 	$(call say,"Installation complete")
 
 install-uboot:
-	$(call say,"Installing U-Boot to $(CARD)")
+	$(call say,"Installing U-Boot $(UBOOT) to $(CARD)")
 	$(call check_build)
 	docker run \
 		--rm \
 		--tty \
+		--privileged \
 		--device=$(CARD):/dev/mmcblk0	\
 		--hostname $(call read_builded_config,HOSTNAME) \
 		$(call read_builded_config,IMAGE) \
