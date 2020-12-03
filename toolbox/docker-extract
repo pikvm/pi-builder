@@ -43,8 +43,8 @@ _logger = logging.getLogger("docker-extract")
 # =====
 def _get_image_manifest(image_tar: tarfile.TarFile) -> Dict:
     _logger.debug(":: Reading image manifest")
-    with contextlib.closing(image_tar.extractfile("manifest.json")) as manifest_file:
-        manifest = json.load(manifest_file, encoding="utf-8")  # type: ignore
+    with contextlib.closing(image_tar.extractfile("manifest.json"), encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)  # type: ignore
         assert len(manifest) == 1, "Can't process manifest.json:\n" + json.dumps(manifest, indent="    ")
         return manifest[0]
 
