@@ -44,7 +44,7 @@ _logger = logging.getLogger("docker-extract")
 def _get_image_manifest(image_tar: tarfile.TarFile) -> Dict:
     _logger.debug(":: Reading image manifest")
     with contextlib.closing(image_tar.extractfile("manifest.json")) as manifest_file:
-        manifest = json.load(manifest_file, encoding="utf-8")  # type: ignore
+        manifest = json.load(manifest_file)  # type: ignore
         assert len(manifest) == 1, "Can't process manifest.json:\n" + json.dumps(manifest, indent="    ")
         return manifest[0]
 
@@ -132,7 +132,7 @@ def main() -> None:
 
     with tarfile.open(options.input) as image_tar:
         with contextlib.closing(image_tar.extractfile("repositories")) as repos_file:
-            repos = json.load(repos_file, encoding="utf-8")  # type: ignore
+            repos = json.load(repos_file)  # type: ignore
 
         if options.list_tags:
             print("\n".join(_get_image_manifest(image_tar)["RepoTags"]))
