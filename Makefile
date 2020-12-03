@@ -360,7 +360,7 @@ extract: $(__DEP_TOOLBOX)
 	$(call say,"Extraction complete")
 
 
-install: extract format
+install: format extract install-uboot
 	$(call say,"Installing to $(CARD)")
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		mkdir -p mnt/boot mnt/rootfs \
@@ -371,25 +371,26 @@ install: extract format
 		&& mkdir mnt/rootfs/boot \
 		&& umount mnt/boot mnt/rootfs \
 	"
-ifneq ($(UBOOT),)
-	install-uboot
-endif
 	$(call say,"Installation complete")
 
 install-uboot:
+ifneq ($(UBOOT),)
 	$(call say,"Installing U-Boot $(UBOOT) to $(CARD)")
 	$(call check_build)
 	docker run \
 		--rm \
 		--tty \
 		--privileged \
-		--device=$(CARD):/dev/mmcblk0	\
+		--volume `pwd`/$(_RPI_RESULT_ROOTFS)/boot:/tmp/boot \
+		--device $(CARD):/dev/mmcblk0 \
 		--hostname $(call read_builded_config,HOSTNAME) \
 		$(call read_builded_config,IMAGE) \
 		bash -c " \
-			echo 'y' | pacman --noconfirm -S uboot-$(UBOOT)\
+			echo 'y' | pacman --noconfirm -Syu uboot-pikvm-$(UBOOT) \
+			&& cp -a /boot/* /tmp/boot/ \
 		"
 	$(call say,"U-Boot installation complete")
+endif	
 
 .PHONY: toolbox
 .NOTPARALLEL: clean-all install
