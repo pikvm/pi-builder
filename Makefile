@@ -26,6 +26,7 @@
 PROJECT ?= common
 BOARD ?= rpi
 ARCH ?= arm
+UBOOT ?=
 STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth no-audit ro ssh-keygen __cleanup__
 
 HOSTNAME ?= pi
@@ -370,18 +371,24 @@ install: extract format
 		&& mkdir mnt/rootfs/boot \
 		&& umount mnt/boot mnt/rootfs \
 	"
-ifeq ($(BOARD),rock64)
-	wget http://os.archlinuxarm.org/os/rockchip/boot/rock64/rksd_loader.img -O $(_TMP_DIR)/rksd_loader.img
-	wget http://os.archlinuxarm.org/os/rockchip/boot/rock64/u-boot.itb -O $(_TMP_DIR)/u-boot.itb
-	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
-		set -x \
-		&& set -e \
-		&& dd if=./.tmp/rksd_loader.img of=$(CARD) seek=64 conv=notrunc \
-		&& dd if=./.tmp/u-boot.itb of=$(CARD) seek=16384 conv=notrunc \
-	"
+ifneq ($(UBOOT),)
+	$(call install-uboot)
 endif
-	$(call say,"Installation complete")	
+	$(call say,"Installation complete")
 
+install-uboot:
+	$(call say,"Installing U-Boot to $(CARD)")
+	$(call check_build)
+	docker run \
+		--rm \
+		--tty \
+		--device=$(CARD):/dev/mmcblk0	\
+		--hostname $(call read_builded_config,HOSTNAME) \
+		$(call read_builded_config,IMAGE) \
+		bash -c " \
+			echo 'y' | pacman --noconfirm -S uboot-$(UBOOT)\
+		"
+	$(call say,"U-Boot installation complete")
 
 .PHONY: toolbox
 .NOTPARALLEL: clean-all install

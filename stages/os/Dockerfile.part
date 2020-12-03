@@ -51,7 +51,7 @@ RUN pacman --noconfirm -Syy \
 				case "$BOARD" in \
 					rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
 					rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
-					*) pacman --needed --noconfirm -S linux-arm7-headers ;; \
+					*) pacman --needed --noconfirm -S linux-armv7-headers ;; \
 				esac ;; \
 			aarch64) pacman --needed --noconfirm -S linux-aarch64-headers ;; \
 			*) echo "Unknown architecture: $ARCH"; exit 1;; \
