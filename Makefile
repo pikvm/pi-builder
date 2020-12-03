@@ -380,7 +380,6 @@ ifneq ($(UBOOT),)
 	docker run \
 		--rm \
 		--tty \
-		--privileged \
 		--volume `pwd`/$(_RPI_RESULT_ROOTFS)/boot:/tmp/boot \
 		--device $(CARD):/dev/mmcblk0 \
 		--hostname $(call read_builded_config,HOSTNAME) \
