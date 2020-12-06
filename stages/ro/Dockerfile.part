@@ -1,7 +1,11 @@
 # Based on https://gist.github.com/yeokm1/8b0ffc03e622ce011010
 
 RUN [ ! -f /boot/cmdline.txt ] || sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
-RUN [ ! -f /boot/boot.txt ] || (cd /boot && sed -i -e "s|\<rw\>|ro|g" ./boot.txt && ./mkscr)
+RUN [ ! -f /boot/boot.txt ] || \
+	(pacman --noconfirm --needed -S uboot-tools \
+	&& cd /boot \
+	&& sed -i -e "s|\<rw\>|ro|g" ./boot.txt \
+	&& ./mkscr)
 
 RUN mkdir -p /var/lib/private \
 	&& chmod 700 /var/lib/private
