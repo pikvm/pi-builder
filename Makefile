@@ -48,7 +48,7 @@ QEMU_RM ?= 1
 
 
 # =====
-_IMAGES_PREFIX = pi-builder
+_IMAGES_PREFIX = pi-builder-$(ARCH)
 _TOOLBOX_IMAGE = $(_IMAGES_PREFIX)-toolbox
 
 _TMP_DIR = ./.tmp
