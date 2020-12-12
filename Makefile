@@ -360,7 +360,7 @@ extract: $(__DEP_TOOLBOX)
 	$(call say,"Extraction complete")
 
 
-install: format extract install-uboot
+install: extract format install-uboot
 	$(call say,"Installing to $(CARD)")
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		mkdir -p mnt/boot mnt/rootfs \
