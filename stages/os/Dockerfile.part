@@ -47,16 +47,16 @@ RUN pacman --noconfirm -Syy \
 		rng-tools \
 		bc \
 		ccache \
-	&& 	case "$ARCH" in \
-			arm) \
-				case "$BOARD" in \
-					rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
-					rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
-					*) pacman --needed --noconfirm -S linux-armv7-headers ;; \
-				esac ;; \
-			aarch64) pacman --needed --noconfirm -S linux-aarch64-headers ;; \
-			*) echo "Unknown architecture: $ARCH"; exit 1;; \
-		esac \
+	&& case "$ARCH" in \
+        arm) \
+            case "$BOARD" in \
+                rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
+                rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
+                *) pacman --needed --noconfirm -S linux-armv7-headers ;; \
+            esac ;; \
+        aarch64) pacman --needed --noconfirm -S linux-aarch64-headers ;; \
+        *) echo "Unknown architecture: $ARCH"; exit 1;; \
+    esac \
 	&& (pacman --noconfirm -Sc || true)
 
 RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng"' > /etc/conf.d/rngd \
