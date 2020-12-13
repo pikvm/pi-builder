@@ -61,15 +61,27 @@ _QEMU_COLLECTION = qemu
 _QEMU_STATIC = $(_QEMU_COLLECTION)/qemu-$(_QEMU_GUEST_ARCH)-static
 _QEMU_STATIC_GUEST_PATH ?= $(QEMU_PREFIX)/bin/qemu-$(_QEMU_GUEST_ARCH)-static
 
-_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(shell bash -c " \
-	if [ '$(BOARD)' == rpi -o '$(BOARD)' == zero -o '$(BOARD)' == zerow ]; then echo rpi; \
-	elif [[ '$(BOARD)' =~ rpi ]] && [ '$(ARCH)' == aarch64 ]; then echo 'rpi-aarch64'; \
-	elif [ '$(BOARD)' == rpi2 -o '$(BOARD)' == rpi3 ]; then echo rpi-2; \
-	elif [ '$(BOARD)' == rpi4 ]; then echo rpi-4; \
-	elif [ '$(ARCH)' == aarch64 ]; then echo 'aarch64'; \
-	else echo 'armv7'; \
-	fi \
-")-latest.tar.gz
+_RPI_ROOTFS_TYPE = ${shell bash -c " \
+	case '$(ARCH)' in \
+		arm) \
+			case '$(BOARD)' in \
+				rpi|zero|zerow) echo 'rpi';; \
+				rpi2|rpi3) echo 'rpi-2';; \
+				rpi4) echo 'rpi-4';; \
+				generic) echo 'armv7';; \
+			esac;; \
+		aarch64) \
+			case '$(BOARD)' in \
+				rpi3|rpi4) echo 'rpi-aarch64';; \
+				generic) echo 'aarch64';; \
+			esac;; \
+	esac \
+"}
+ifeq ($(_RPI_ROOTFS_TYPE),)
+$(error Invalid board and architecture combination: $(BOARD)-$(ARCH))
+endif
+
+_RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(_RPI_ROOTFS_TYPE)-latest.tar.gz
 _RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs-$(BOARD).tar.gz
 _RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(BOARD)
 _RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
