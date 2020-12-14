@@ -46,11 +46,17 @@ RUN pacman --noconfirm -Syy \
 		jshon \
 		rng-tools \
 		bc \
-	&& case "$BOARD" in \
-			rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
-			rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
-			*) echo "Unknown board: $BOARD"; exit 1;; \
-		esac \
+		ccache \
+	&& case "$ARCH" in \
+        arm) \
+            case "$BOARD" in \
+                rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
+                rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
+                *) pacman --needed --noconfirm -S linux-armv7-headers ;; \
+            esac ;; \
+        aarch64) pacman --needed --noconfirm -S linux-aarch64-headers ;; \
+        *) echo "Unknown architecture: $ARCH"; exit 1;; \
+    esac \
 	&& (pacman --noconfirm -Sc || true)
 
 RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng"' > /etc/conf.d/rngd \
@@ -62,6 +68,8 @@ RUN gcc -fPIC -shared -o /usr/local/lib/libpreload-semop.so /tmp/semop-wrapper.c
 ENV LD_PRELOAD=/usr/local/lib/libpreload-semop.so
 
 RUN sed -i -e "s/^#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
+RUN sed -i -e "s/ \!ccache / ccache /g" /etc/makepkg.conf
+ENV PATH="/usr/lib/ccache/bin/:${PATH}"
 
 RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf \
 	&& systemctl enable systemd-resolved
