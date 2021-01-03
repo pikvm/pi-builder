@@ -131,7 +131,7 @@ $(call say,"Running configuration")
 @ echo "    TIMEZONE   = $(TIMEZONE)"
 @ echo "    REPO_URL   = $(REPO_URL)"
 @ echo "    PIKVM_REPO_URL   = $(PIKVM_REPO_URL)"
-@ echo "    PIKVM_REPO_KEY   = $(PIKVM_REPO_URL)"
+@ echo "    PIKVM_REPO_KEY   = $(PIKVM_REPO_KEY)"
 @ echo
 @ echo "    CARD = $(CARD)"
 @ echo
