@@ -2,6 +2,8 @@ FROM scratch
 
 ADD "%BASE_ROOTFS_TGZ%" /
 COPY "qemu-%QEMU_GUEST_ARCH%-static" "%QEMU_STATIC_GUEST_PATH%"
+RUN mkdir -p /etc/pacman.d/hooks \
+	&& ln -s /dev/null /etc/pacman.d/hooks/30-systemd-tmpfiles.hook
 
 ARG BOARD
 ENV BOARD $BOARD
