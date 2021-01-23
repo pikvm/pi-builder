@@ -1,5 +1,6 @@
 RUN rm -rf \
 		/etc/*- \
+		/var/cache/pacman/pkg/* \
 		/var/lib/systemd/* \
 		/var/lib/private/* \
 		/var/log/* \
