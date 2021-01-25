@@ -6,4 +6,5 @@ fi
 pacman --noconfirm -Syu && pacman --noconfirm --needed -S $@
 retval=$?
 pacman --noconfirm -Sc
+rm -rf /var/cache/pacman/pkg/*
 exit $retval
