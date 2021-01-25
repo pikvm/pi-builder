@@ -10,7 +10,8 @@ RUN pacman --noconfirm -Syu \
 		parted \
 		dosfstools \
 		rsync \
-	&& (pacman --noconfirm -Sc || true)
+	&& (pacman --noconfirm -Sc || true) \
+	&& rm -rf /var/cache/pacman/pkg/*
 
 RUN mkdir /tools
 COPY install-binfmt /tools/
