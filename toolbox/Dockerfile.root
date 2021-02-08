@@ -1,9 +1,9 @@
-FROM archlinux/archlinux:base-devel-20210205.0.15146
+FROM archlinux/archlinux:base-devel
 
 RUN mkdir -p /etc/pacman.d/hooks \
 	&& ln -s /dev/null /etc/pacman.d/hooks/30-systemd-tmpfiles.hook
 
-RUN pacman --noconfirm -Sy \
+RUN pacman --noconfirm -Syu \
 	&& pacman --needed --noconfirm -S \
 		arp-scan \
 		python \
