@@ -1,8 +1,8 @@
 RUN ( \
-		mkdir -p -m 0700 $HOME/.gnupg \
-		&& echo standard-resolver >> $HOME/.gnupg/dirmngr.conf
-		pacman-key --keyserver hkps://hkps.pool.sks-keyservers.net -r $PIKVM_REPO_KEY \
-		|| pacman-key --keyserver keyserver.ubuntu.com -r $PIKVM_REPO_KEY \
+		mkdir -p /etc/gnupg \
+		&& echo standard-resolver >> /etc/gnupg/dirmngr.conf \
+		&& ( pacman-key --keyserver hkps://hkps.pool.sks-keyservers.net -r $PIKVM_REPO_KEY \
+		|| pacman-key --keyserver keyserver.ubuntu.com -r $PIKVM_REPO_KEY ) \
 	) \
 	&& pacman-key --lsign-key $PIKVM_REPO_KEY \
 	&& echo -e "\n[pikvm]" >> /etc/pacman.conf \
