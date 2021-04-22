@@ -3,14 +3,13 @@ FROM archlinux/archlinux:base-devel
 RUN mkdir -p /etc/pacman.d/hooks \
 	&& ln -s /dev/null /etc/pacman.d/hooks/30-systemd-tmpfiles.hook
 
-RUN pacman --noconfirm -Syu \
-	&& pacman --needed --noconfirm -S \
+RUN pacman --noconfirm --ask=4 -Syu \
+	&& pacman --needed --noconfirm --ask=4 -S \
 		arp-scan \
 		python \
 		parted \
 		dosfstools \
 		rsync \
-	&& (pacman --noconfirm -Sc || true) \
 	&& rm -rf /var/cache/pacman/pkg/*
 
 RUN mkdir /tools

@@ -15,19 +15,19 @@ RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 
 RUN sed -i -e "s/^CheckSpace/#!!!CheckSpace/g" /etc/pacman.conf
 
-RUN pacman --noconfirm -Syy \
-	&& pacman --needed --noconfirm -S \
+RUN pacman --noconfirm --ask=4 -Syy \
+	&& pacman --needed --noconfirm --ask=4 -S \
 		glibc \
 		pacman \
 	&& pacman-db-upgrade \
-	&& pacman --noconfirm -Syu \
-	&& pacman --needed --noconfirm -S \
+	&& pacman --noconfirm --ask=4 -Syu \
+	&& pacman --needed --noconfirm --ask=4 -S \
 		p11-kit \
 		archlinux-keyring \
 		ca-certificates \
 		ca-certificates-mozilla \
 		ca-certificates-utils \
-	&& pacman --needed --noconfirm -S \
+	&& pacman --needed --noconfirm --ask=4 -S \
 		base \
 		base-devel \
 		vim \
@@ -50,14 +50,14 @@ RUN pacman --noconfirm -Syy \
 	&& case "$ARCH" in \
         arm) \
             case "$BOARD" in \
-                rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm -S linux-raspberrypi linux-raspberrypi-headers;; \
-                rpi4) pacman --needed --noconfirm -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
-                *) pacman --needed --noconfirm -S linux-armv7-headers;; \
+                rpi|rpi2|rpi3|zero|zerow) pacman --needed --noconfirm --ask=4 -S linux-raspberrypi linux-raspberrypi-headers;; \
+                rpi4) pacman --needed --noconfirm --ask=4 -S linux-raspberrypi4 linux-raspberrypi4-headers;; \
+                *) pacman --needed --noconfirm --ask=4 -S linux-armv7-headers;; \
             esac;; \
-        aarch64) pacman --needed --noconfirm -S linux-aarch64-headers;; \
+        aarch64) pacman --needed --noconfirm --ask=4 -S linux-aarch64-headers;; \
         *) echo "Unknown architecture: $ARCH"; exit 1;; \
     esac \
-	&& (pacman --noconfirm -Sc || true)
+	&& rm -rf /var/cache/pacman/pkg/*
 
 # https://github.com/pikvm/pikvm/issues/190
 RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng -x 5"' > /etc/conf.d/rngd \

@@ -2,7 +2,7 @@
 
 RUN [ ! -f /boot/cmdline.txt ] || sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
 RUN [ ! -f /boot/boot.txt ] || ( \
-        pacman --noconfirm --needed -S uboot-tools \
+        pacman --noconfirm --ask=4 --needed -S uboot-tools \
         && cd /boot \
         && sed -i -e "s|\<rw\>|ro|g" boot.txt \
         && ./mkscr \
