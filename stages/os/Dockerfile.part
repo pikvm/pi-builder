@@ -60,7 +60,7 @@ RUN pacman --noconfirm --ask=4 -Syy \
 	&& rm -rf /var/cache/pacman/pkg/*
 
 # https://github.com/pikvm/pikvm/issues/190
-RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng -x 5"' > /etc/conf.d/rngd \
+RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng -x jitter -x pkcs11 -x rtlsdr"' > /etc/conf.d/rngd \
 	&& systemctl disable haveged \
 	&& systemctl enable rngd
 
