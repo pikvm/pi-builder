@@ -54,7 +54,7 @@ _TOOLBOX_IMAGE = $(_IMAGES_PREFIX)-toolbox
 
 _CACHE_DIR = ./.cache
 _BUILD_DIR = ./.build
-_BUILDED_IMAGE_CONFIG = ./.builded.conf
+_BUILT_IMAGE_CONFIG = ./.built.conf
 
 _QEMU_GUEST_ARCH = $(ARCH)
 _QEMU_STATIC_BASE_URL = http://mirror.yandex.ru/debian/pool/main/q/qemu
@@ -115,8 +115,8 @@ define die
 @ exit 1
 endef
 
-define read_builded_config
-$(shell grep "^$(1)=" $(_BUILDED_IMAGE_CONFIG) | cut -d"=" -f2)
+define read_built_config
+$(shell grep "^$(1)=" $(_BUILT_IMAGE_CONFIG) | cut -d"=" -f2)
 endef
 
 define show_running_config
@@ -141,7 +141,7 @@ $(call say,"Running configuration")
 endef
 
 define check_build
-$(if $(wildcard $(_BUILDED_IMAGE_CONFIG)),,$(call die,"Not built yet"))
+$(if $(wildcard $(_BUILT_IMAGE_CONFIG)),,$(call die,"Not built yet"))
 endef
 
 
@@ -183,9 +183,9 @@ run: $(__DEP_BINFMT)
 	$(DOCKER) run \
 			--rm \
 			--tty \
-			--hostname $(call read_builded_config,HOSTNAME) \
+			--hostname $(call read_built_config,HOSTNAME) \
 			$(if $(RUN_CMD),$(RUN_OPTS),--interactive) \
-		$(call read_builded_config,IMAGE) \
+		$(call read_built_config,IMAGE) \
 		$(if $(RUN_CMD),$(RUN_CMD),/bin/bash)
 
 
@@ -228,7 +228,7 @@ scan: $(__DEP_TOOLBOX)
 
 os: $(__DEP_BINFMT) _buildctx
 	$(call say,"Building OS")
-	rm -f $(_BUILDED_IMAGE_CONFIG)
+	rm -f $(_BUILT_IMAGE_CONFIG)
 	$(DOCKER) build \
 			--rm \
 			--tag $(_RPI_RESULT_IMAGE) \
@@ -244,8 +244,8 @@ os: $(__DEP_BINFMT) _buildctx
 			--build-arg "REBUILD=$(shell uuidgen)" \
 			$(BUILD_OPTS) \
 		$(_BUILD_DIR)
-	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILDED_IMAGE_CONFIG)
-	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILDED_IMAGE_CONFIG)
+	echo "IMAGE=$(_RPI_RESULT_IMAGE)" > $(_BUILT_IMAGE_CONFIG)
+	echo "HOSTNAME=$(HOSTNAME)" >> $(_BUILT_IMAGE_CONFIG)
 	$(call show_running_config)
 	$(call say,"Build complete")
 
@@ -307,7 +307,7 @@ $(_QEMU_COLLECTION):
 
 # =====
 clean:
-	rm -rf $(_BUILD_DIR) $(_BUILDED_IMAGE_CONFIG)
+	rm -rf $(_BUILD_DIR) $(_BUILT_IMAGE_CONFIG)
 
 
 __DOCKER_RUN_TMP = $(DOCKER) run \
@@ -365,10 +365,10 @@ extract: $(__DEP_TOOLBOX)
 	$(call say,"Extracting image from Docker")
 	_file=$(_RPI_RESULT_ROOTFS_TAR); \
 	_ftime=$$([[ -e $$_file ]] && stat -c '%Y' $$_file || echo 0); \
-	_itime=$$($(DOCKER) image inspect $(call read_builded_config,IMAGE) | jq '.[].Created | sub("\\.[0-9]+"; "") | fromdate'); \
+	_itime=$$($(DOCKER) image inspect $(call read_built_config,IMAGE) | jq '.[].Created | sub("\\.[0-9]+"; "") | fromdate'); \
 	if (( $$_itime > $$_ftime )); then \
 		rm -rf $(_RPI_RESULT_ROOTFS_TAR); \
-		$(DOCKER) save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_builded_config,IMAGE); \
+		$(DOCKER) save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_built_config,IMAGE); \
 	fi
 	_dir=$(_RPI_RESULT_ROOTFS); \
 	_dtime=$$([[ -d $$_dir ]] && stat -c '%Y' $$_dir || echo 0); \
@@ -377,7 +377,7 @@ extract: $(__DEP_TOOLBOX)
 		$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS); \
 		$(__DOCKER_RUN_TMP) /tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR); \
 		$(__DOCKER_RUN_TMP) bash -c " \
-			echo $(call read_builded_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
+			echo $(call read_built_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
 			&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_STATIC_GUEST_PATH)) \
 		"; \
 	fi
@@ -406,8 +406,8 @@ ifneq ($(UBOOT),)
 		--tty \
 		--volume `pwd`/$(_RPI_RESULT_ROOTFS)/boot:/tmp/boot \
 		--device $(CARD):/dev/mmcblk0 \
-		--hostname $(call read_builded_config,HOSTNAME) \
-		$(call read_builded_config,IMAGE) \
+		--hostname $(call read_built_config,HOSTNAME) \
+		$(call read_built_config,IMAGE) \
 		bash -c " \
 			echo 'y' | pacman --noconfirm -Syu uboot-pikvm-$(UBOOT) \
 			&& cp -a /boot/* /tmp/boot/ \
