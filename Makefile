@@ -52,7 +52,7 @@ QEMU_RM ?= 1
 _IMAGES_PREFIX = pi-builder-$(ARCH)
 _TOOLBOX_IMAGE = $(_IMAGES_PREFIX)-toolbox
 
-_TMP_DIR = ./.tmp
+_CACHE_DIR = ./.cache
 _BUILD_DIR = ./.build
 _BUILDED_IMAGE_CONFIG = ./.builded.conf
 
@@ -83,11 +83,11 @@ $(error Invalid board and architecture combination: $(BOARD)-$(ARCH))
 endif
 
 _RPI_ROOTFS_URL = $(REPO_URL)/os/ArchLinuxARM-$(_RPI_ROOTFS_TYPE)-latest.tar.gz
-_RPI_BASE_ROOTFS_TGZ = $(_TMP_DIR)/base-rootfs-$(BOARD).tar.gz
+_RPI_BASE_ROOTFS_TGZ = $(_CACHE_DIR)/base-rootfs-$(BOARD).tar.gz
 _RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(BOARD)
 _RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
-_RPI_RESULT_ROOTFS_TAR = $(_TMP_DIR)/result-rootfs.tar
-_RPI_RESULT_ROOTFS = $(_TMP_DIR)/result-rootfs
+_RPI_RESULT_ROOTFS_TAR = $(_CACHE_DIR)/result-rootfs.tar
+_RPI_RESULT_ROOTFS = $(_CACHE_DIR)/result-rootfs
 
 _CARD_P = $(if $(findstring mmcblk,$(CARD)),p,$(if $(findstring loop,$(CARD)),p,))
 _CARD_BOOT = $(CARD)$(_CARD_P)1
@@ -273,7 +273,7 @@ _buildctx: _rpi_base_rootfs_tgz
 _rpi_base_rootfs_tgz:
 	$(call say,"Ensuring base rootfs")
 	if [ ! -e $(_RPI_BASE_ROOTFS_TGZ) ]; then \
-		mkdir -p $(_TMP_DIR) \
+		mkdir -p $(_CACHE_DIR) \
 		&& curl -L -f $(_RPI_ROOTFS_URL) -z $(_RPI_BASE_ROOTFS_TGZ) -o $(_RPI_BASE_ROOTFS_TGZ) \
 	; fi
 	$(call say,"Base rootfs is ready")
@@ -285,22 +285,22 @@ $(_QEMU_COLLECTION):
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
-	mkdir -p $(_TMP_DIR)/qemu-user-static-deb
+	mkdir -p $(_CACHE_DIR)/qemu-user-static-deb
 	curl -L -f $(_QEMU_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_STATIC_BASE_URL)/ \
-			-z $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
+			-z $(_CACHE_DIR)/qemu-user-static-deb/qemu-user-static.deb \
 				| grep qemu-user-static \
 				| grep _$(if $(filter-out aarch64,$(ARCH)),i386,amd64).deb \
 				| sort -n \
 				| tail -n 1 \
 				| sed -n 's/.*href="\([^"]*\).*/\1/p'` \
-		-o $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb \
-		-z $(_TMP_DIR)/qemu-user-static-deb/qemu-user-static.deb
-	cd $(_TMP_DIR)/qemu-user-static-deb \
+		-o $(_CACHE_DIR)/qemu-user-static-deb/qemu-user-static.deb \
+		-z $(_CACHE_DIR)/qemu-user-static-deb/qemu-user-static.deb
+	cd $(_CACHE_DIR)/qemu-user-static-deb \
 		&& ar vx qemu-user-static.deb \
 		&& tar -xJf data.tar.xz
 	rm -rf $(_QEMU_COLLECTION).tmp
 	mkdir $(_QEMU_COLLECTION).tmp
-	cp $(_TMP_DIR)/qemu-user-static-deb/usr/bin/qemu-$(ARCH)-static $(_QEMU_COLLECTION).tmp
+	cp $(_CACHE_DIR)/qemu-user-static-deb/usr/bin/qemu-$(ARCH)-static $(_QEMU_COLLECTION).tmp
 	mv $(_QEMU_COLLECTION).tmp $(_QEMU_COLLECTION)
 	$(call say,"QEMU ready")
 
@@ -313,8 +313,8 @@ clean:
 __DOCKER_RUN_TMP = $(DOCKER) run \
 		--rm \
 		--tty \
-		--volume $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
-		--workdir /root/$(_TMP_DIR)/.. \
+		--volume $(shell pwd)/$(_CACHE_DIR):/root/$(_CACHE_DIR) \
+		--workdir /root/$(_CACHE_DIR)/.. \
 	$(_TOOLBOX_IMAGE)
 
 
@@ -322,14 +322,14 @@ __DOCKER_RUN_TMP_PRIVILEGED = $(DOCKER) run \
 		--rm \
 		--tty \
 		--privileged \
-		--volume $(shell pwd)/$(_TMP_DIR):/root/$(_TMP_DIR) \
-		--workdir /root/$(_TMP_DIR)/.. \
+		--volume $(shell pwd)/$(_CACHE_DIR):/root/$(_CACHE_DIR) \
+		--workdir /root/$(_CACHE_DIR)/.. \
 	$(_TOOLBOX_IMAGE)
 
 
 clean-all: $(__DEP_TOOLBOX) clean
 	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
-	rm -rf $(_TMP_DIR)
+	rm -rf $(_CACHE_DIR)
 
 
 format: $(__DEP_TOOLBOX)
