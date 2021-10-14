@@ -369,7 +369,7 @@ extract: $(__DEP_TOOLBOX)
 	_ftime=$$([[ -e $$_file ]] && stat -c '%Y' $$_file || echo 0); \
 	_itime=$$($(DOCKER) image inspect $(call read_built_config,IMAGE) | jq '.[].Created | sub("\\.[0-9]+"; "") | fromdate'); \
 	if (( $$_itime > $$_ftime )); then \
-		rm -rf $(_RPI_RESULT_ROOTFS_TAR); \
+		rm -f $(_RPI_RESULT_ROOTFS_TAR); \
 		$(DOCKER) save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_built_config,IMAGE); \
 	fi
 	_dir=$(_RPI_RESULT_ROOTFS); \
