@@ -365,6 +365,7 @@ format: $(__DEP_TOOLBOX)
 extract: $(__DEP_TOOLBOX)
 	$(call check_build)
 	$(call say,"Extracting image from Docker")
+	which jq
 	_file=$(_RPI_RESULT_ROOTFS_TAR); \
 	_ftime=$$([[ -e $$_file ]] && stat -c '%Y' $$_file || echo 0); \
 	_itime=$$($(DOCKER) image inspect $(call read_built_config,IMAGE) | jq '.[].Created | sub("\\.[0-9]+"; "") | fromdate'); \
