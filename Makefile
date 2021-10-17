@@ -35,7 +35,7 @@ LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
 #REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
 REPO_URL = http://de3.mirror.archlinuxarm.org
-PIKVM_REPO_URL ?= https://pikvm.org/repos
+PIKVM_REPO_URL ?= https://files.pikvm.org/repos/arch/
 PIKVM_REPO_KEY ?= 912C773ABBD1B584
 BUILD_OPTS ?=
 
