@@ -365,25 +365,13 @@ format: $(__DEP_TOOLBOX)
 extract: $(__DEP_TOOLBOX)
 	$(call check_build)
 	$(call say,"Extracting image from Docker")
-	which jq
-	_file=$(_RPI_RESULT_ROOTFS_TAR); \
-	_ftime=$$([[ -e $$_file ]] && stat -c '%Y' $$_file || echo 0); \
-	_itime=$$($(DOCKER) image inspect $(call read_built_config,IMAGE) | jq '.[].Created | sub("\\.[0-9]+"; "") | fromdate'); \
-	if (( $$_itime > $$_ftime )); then \
-		rm -f $(_RPI_RESULT_ROOTFS_TAR); \
-		$(DOCKER) save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_built_config,IMAGE); \
-	fi
-	_dir=$(_RPI_RESULT_ROOTFS); \
-	_dtime=$$([[ -d $$_dir ]] && stat -c '%Y' $$_dir || echo 0); \
-	_ftime=$$(stat -c '%Y' $(_RPI_RESULT_ROOTFS_TAR)); \
-	if (( $$_ftime > $$_dtime )); then \
-		$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS); \
-		$(__DOCKER_RUN_TMP) /tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR); \
-		$(__DOCKER_RUN_TMP) bash -c " \
-			echo $(call read_built_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
-			&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_STATIC_GUEST_PATH)) \
-		"; \
-	fi
+	$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS)
+	$(DOCKER) save --output $(_RPI_RESULT_ROOTFS_TAR) $(call read_built_config,IMAGE)
+	$(__DOCKER_RUN_TMP) /tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR)
+	$(__DOCKER_RUN_TMP) bash -c " \
+		echo $(call read_built_config,HOSTNAME) > $(_RPI_RESULT_ROOTFS)/etc/hostname \
+		&& (test -z '$(call optbool,$(QEMU_RM))' || rm $(_RPI_RESULT_ROOTFS)/$(_QEMU_STATIC_GUEST_PATH)) \
+	"
 	$(call say,"Extraction complete")
 
 
