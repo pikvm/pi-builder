@@ -376,7 +376,7 @@ extract: $(__DEP_TOOLBOX)
 	_dir=$(_RPI_RESULT_ROOTFS); \
 	_dtime=$$([[ -d $$_dir ]] && stat -c '%Y' $$_dir || echo 0); \
 	_ftime=$$(stat -c '%Y' $(_RPI_RESULT_ROOTFS_TAR)); \
-	if (( $$_ftime >> $$_dtime )); then \
+	if (( $$_ftime > $$_dtime )); then \
 		$(__DOCKER_RUN_TMP) rm -rf $(_RPI_RESULT_ROOTFS); \
 		$(__DOCKER_RUN_TMP) /tools/docker-extract --root $(_RPI_RESULT_ROOTFS) $(_RPI_RESULT_ROOTFS_TAR); \
 		$(__DOCKER_RUN_TMP) bash -c " \
