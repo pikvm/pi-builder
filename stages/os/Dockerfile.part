@@ -75,8 +75,6 @@ ENV PATH="/usr/lib/ccache/bin/:${PATH}"
 RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf \
 	&& systemctl enable systemd-resolved
 
-RUN sed -i -e 's/#NTP=$/NTP=0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org/g' /etc/systemd/timesyncd.conf
-
 COPY stages/os/gitconfig /etc/skel/.gitconfig
 COPY stages/os/gitconfig /root/.gitconfig
 COPY stages/os/gitconfig /home/alarm/.gitconfig
