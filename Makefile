@@ -381,8 +381,8 @@ install: extract format install-uboot
 		mkdir -p mnt/boot mnt/rootfs \
 		&& mount $(_CARD_BOOT) mnt/boot \
 		&& mount $(_CARD_ROOTFS) mnt/rootfs \
-		&& rsync -a --progress $(_RPI_RESULT_ROOTFS)/boot/* mnt/boot \
-		&& rsync -a --progress $(_RPI_RESULT_ROOTFS)/* mnt/rootfs --exclude boot \
+		&& rsync -a --quiet $(_RPI_RESULT_ROOTFS)/boot/* mnt/boot \
+		&& rsync -a --quiet $(_RPI_RESULT_ROOTFS)/* mnt/rootfs --exclude boot \
 		&& mkdir mnt/rootfs/boot \
 		&& umount mnt/boot mnt/rootfs \
 	"
