@@ -113,7 +113,7 @@ $ make
 
 ===== Available commands  =====
     make                # Print this help
-    rpi|rpi2|rpi3|rpi4|zero|zerow  # Build Arch-ARM rootfs with pre-defined config
+    rpi|rpi2|rpi3|rpi4|zero|zerow|zero2w  # Build Arch-ARM rootfs with pre-defined config
     make shell          # Run Arch-ARM shell
     make binfmt         # Before build
     make scan           # Find all RPi devices in the local network

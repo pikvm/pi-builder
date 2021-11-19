@@ -67,7 +67,7 @@ _RPI_ROOTFS_TYPE = ${shell bash -c " \
 		arm) \
 			case '$(BOARD)' in \
 				rpi|zero|zerow) echo 'rpi';; \
-				rpi2|rpi3) echo 'rpi-2';; \
+				rpi2|rpi3|zero2w) echo 'rpi-2';; \
 				rpi4) echo 'rpi-4';; \
 				generic) echo 'armv7';; \
 			esac;; \
@@ -155,7 +155,7 @@ all:
 	@ echo
 	$(call say,"Available commands")
 	@ echo "    make                     # Print this help"
-	@ echo "    make rpi|rpi2|rpi3|rpi4|zero|zerow  # Build Arch-ARM rootfs with pre-defined config"
+	@ echo "    make rpi|rpi2|rpi3|rpi4|zero|zerow|zero2w  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell               # Run Arch-ARM shell"
 	@ echo "    make toolbox             # Build the toolbox image"
 	@ echo "    make binfmt              # Configure ARM binfmt on the host system"
@@ -174,8 +174,9 @@ rpi3: BOARD=rpi3
 rpi4: BOARD=rpi4
 zero: BOARD=zero
 zerow: BOARD=zerow
+zero2w: BOARD=zero2w
 generic: BOARD=generic
-rpi rpi2 rpi3 rpi4 zero zerow generic: os
+rpi rpi2 rpi3 rpi4 zero zerow zero2w generic: os
 
 
 run: $(__DEP_BINFMT)
