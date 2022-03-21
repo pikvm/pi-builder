@@ -305,6 +305,8 @@ $(_QEMU_COLLECTION):
 	rm -rf $(_QEMU_COLLECTION).tmp
 	mkdir $(_QEMU_COLLECTION).tmp
 	cp $(_CACHE_DIR)/qemu-user-static-deb/usr/bin/qemu-$(ARCH)-static $(_QEMU_COLLECTION).tmp
+	mv $(_QEMU_COLLECTION).tmp/qemu-$(ARCH)-static $(_QEMU_COLLECTION).tmp/qemu-$(ARCH)-static-orig
+	gcc -static -DQEMU_ARCH=\"$(ARCH)\" -m32 qemu-wrapper.c -o $(_QEMU_COLLECTION).tmp/qemu-$(ARCH)-static
 	mv $(_QEMU_COLLECTION).tmp $(_QEMU_COLLECTION)
 	$(call say,"QEMU ready")
 
