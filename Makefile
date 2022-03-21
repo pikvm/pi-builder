@@ -206,8 +206,6 @@ toolbox:
 
 binfmt: $(__DEP_TOOLBOX)
 	$(call say,"Ensuring $(_QEMU_GUEST_ARCH) binfmt")
-	# FIXME: https://gitlab.com/qemu-project/qemu/-/issues/690
-	sudo sysctl vm.mmap_min_addr=53248
 	$(DOCKER) run \
 			--rm \
 			--tty \
