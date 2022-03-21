@@ -257,7 +257,7 @@ _buildctx: _rpi_base_rootfs_tgz
 	mkdir -p $(_BUILD_DIR)
 	echo "Signature: 8a477f597d28d172789f06886806bc55" > "$(_BUILD_DIR)/CACHEDIR.TAG"
 	ln $(_RPI_BASE_ROOTFS_TGZ) $(_BUILD_DIR)/$(PROJECT)-$(_IMAGES_PREFIX)-base-rootfs-$(BOARD).tgz
-	cp $(_QEMU_STATIC) $(_BUILD_DIR)
+	cp $(_QEMU_STATIC) $(_QEMU_STATIC)-orig $(_BUILD_DIR)
 	cp -r stages $(_BUILD_DIR)
 	sed -i \
 			-e 's|%BASE_ROOTFS_TGZ%|$(PROJECT)-$(_IMAGES_PREFIX)-base-rootfs-$(BOARD).tgz|g' \
