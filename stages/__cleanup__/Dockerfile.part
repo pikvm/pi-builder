@@ -20,7 +20,6 @@ RUN sed -i -e "s/^#!!!CheckSpace/CheckSpace/g" /etc/pacman.conf
 
 RUN rm -f \
 	/etc/pacman.d/hooks/30-systemd-tmpfiles.hook \
-	/usr/local/bin/pkg-install \
-	/usr/local/lib/libpreload-semop.so
+	/usr/local/bin/pkg-install
 
 ENV LD_PRELOAD=

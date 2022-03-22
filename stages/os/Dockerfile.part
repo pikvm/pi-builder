@@ -65,10 +65,6 @@ RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng -x jitter -x pkcs11 -x rtlsdr"
 	&& systemctl disable haveged \
 	&& systemctl enable rngd
 
-COPY stages/os/semop-wrapper.c /tmp
-RUN gcc -fPIC -shared -o /usr/local/lib/libpreload-semop.so /tmp/semop-wrapper.c
-ENV LD_PRELOAD=/usr/local/lib/libpreload-semop.so
-
 RUN sed -i -e "s/^#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
 RUN sed -i -e "s/ \!ccache / ccache /g" /etc/makepkg.conf
 ENV PATH="/usr/lib/ccache/bin/:${PATH}"
