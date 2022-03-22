@@ -251,7 +251,7 @@ os: $(__DEP_BINFMT) _buildctx
 
 
 # =====
-_buildctx: _rpi_base_rootfs_tgz
+_buildctx: _rpi_base_rootfs_tgz qemu
 	$(call say,"Assembling main Dockerfile")
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
@@ -281,12 +281,22 @@ _rpi_base_rootfs_tgz:
 	$(call say,"Base rootfs is ready")
 
 
-$(_QEMU_COLLECTION):
+qemu: $(_QEMU_STATIC) $(_QEMU_STATIC)-orig
+
+
+$(_QEMU_STATIC):
+	mkdir -p $(_QEMU_COLLECTION)
+	gcc -static -DQEMU_ARCH=\"$(ARCH)\" -m32 qemu-wrapper.c -o $(_QEMU_STATIC)
+	$(call say,"QEMU wrapper is ready")
+
+
+$(_QEMU_STATIC)-orig:
 	$(call say,"Downloading QEMU")
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
+	mkdir -p $(_QEMU_COLLECTION)
 	mkdir -p $(_CACHE_DIR)/qemu-user-static-deb
 	curl -L -f $(_QEMU_STATIC_BASE_URL)/`curl -s -S -L -f $(_QEMU_STATIC_BASE_URL)/ \
 			-z $(_CACHE_DIR)/qemu-user-static-deb/qemu-user-static.deb \
@@ -300,13 +310,8 @@ $(_QEMU_COLLECTION):
 	cd $(_CACHE_DIR)/qemu-user-static-deb \
 		&& ar vx qemu-user-static.deb \
 		&& tar -xJf data.tar.xz
-	rm -rf $(_QEMU_COLLECTION).tmp
-	mkdir $(_QEMU_COLLECTION).tmp
-	cp $(_CACHE_DIR)/qemu-user-static-deb/usr/bin/qemu-$(ARCH)-static $(_QEMU_COLLECTION).tmp
-	mv $(_QEMU_COLLECTION).tmp/qemu-$(ARCH)-static $(_QEMU_COLLECTION).tmp/qemu-$(ARCH)-static-orig
-	gcc -static -DQEMU_ARCH=\"$(ARCH)\" -m32 qemu-wrapper.c -o $(_QEMU_COLLECTION).tmp/qemu-$(ARCH)-static
-	mv $(_QEMU_COLLECTION).tmp $(_QEMU_COLLECTION)
-	$(call say,"QEMU ready")
+	cp $(_CACHE_DIR)/qemu-user-static-deb/usr/bin/qemu-$(ARCH)-static $(_QEMU_STATIC)-orig
+	$(call say,"QEMU is ready")
 
 
 # =====
@@ -390,6 +395,7 @@ install: extract format install-uboot
 	"
 	$(call say,"Installation complete")
 
+
 install-uboot:
 ifneq ($(UBOOT),)
 	$(call say,"Installing U-Boot $(UBOOT) to $(CARD)")
@@ -408,5 +414,6 @@ ifneq ($(UBOOT),)
 	$(call say,"U-Boot installation complete")
 endif	
 
-.PHONY: toolbox
+
+.PHONY: toolbox qemu
 .NOTPARALLEL: clean-all install
