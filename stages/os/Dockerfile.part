@@ -48,6 +48,7 @@ RUN pacman --noconfirm --ask=4 -Syy \
 		rng-tools \
 		bc \
 		ccache \
+		screen \
 	&& case "$ARCH" in \
 		arm) \
 			case "$BOARD" in \
