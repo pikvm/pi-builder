@@ -34,7 +34,7 @@ HOSTNAME ?= pi
 LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
 #REPO_URL ?= http://mirror.yandex.ru/archlinux-arm
-REPO_URL = http://de3.mirror.archlinuxarm.org
+REPO_URL ?= http://de3.mirror.archlinuxarm.org
 PIKVM_REPO_URL ?= https://files.pikvm.org/repos/arch/
 PIKVM_REPO_KEY ?= 912C773ABBD1B584
 BUILD_OPTS ?=
@@ -362,8 +362,8 @@ format: $(__DEP_TOOLBOX)
 	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
 		set -x \
 		&& set -e \
-		&& yes | mkfs.vfat $(_CARD_BOOT) \
-		&& yes | mkfs.ext4 $(_CARD_ROOTFS) \
+		&& yes | mkfs.vfat -n PIBOOT $(_CARD_BOOT) \
+		&& yes | mkfs.ext4 -L PIROOT $(_CARD_ROOTFS) \
 		&& $(if $(CARD_DATA_FS_TYPE),yes | mkfs.$(CARD_DATA_FS_TYPE) $(CARD_DATA_FS_FLAGS) $(_CARD_DATA),/bin/true) \
 	"
 	$(call say,"Format complete")
