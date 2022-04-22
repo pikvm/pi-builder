@@ -22,4 +22,6 @@ RUN rm -f \
 	/etc/pacman.d/hooks/30-systemd-tmpfiles.hook \
 	/usr/local/bin/pkg-install
 
+RUN touch -m --date="2000-01-01" /etc/fstab
+
 ENV LD_PRELOAD=
