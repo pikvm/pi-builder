@@ -10,7 +10,7 @@ RUN rm -f /etc/localtime \
 RUN echo "HOOKS=(base udev block filesystems)" >> /etc/mkinitcpio.conf
 
 RUN sed -i -e "s|\<root=/dev/mmcblk0p2\>|root=LABEL=PIROOT|g" /boot/cmdline.txt
-RUN sed -i -e "s|^/dev/mmcblk0p1\>|LABEL=PIBOOT|g" /etc/fstab
+RUN sed -i -e "s|^/dev/mmcblk0p1|LABEL=PIBOOT|g" /etc/fstab
 
 RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 	&& pacman-key --init \
