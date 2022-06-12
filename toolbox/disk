@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+# ========================================================================== #
+#                                                                            #
+#    disk - A parted/mkfs wrapper.                                           #
+#                                                                            #
+#    Partially based on https://github.com/larsks/undocker and contains      #
+#    many major fixes for image spec v1.2.                                   #
+#                                                                            #
+#    Copyright (C) 2022  Maxim Devaev <mdevaev@gmail.com>                    #
+#                                                                            #
+#    This program is free software: you can redistribute it and/or modify    #
+#    it under the terms of the GNU General Public License as published by    #
+#    the Free Software Foundation, either version 3 of the License, or       #
+#    (at your option) any later version.                                     #
+#                                                                            #
+#    This program is distributed in the hope that it will be useful,         #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of          #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
+#    GNU General Public License for more details.                            #
+#                                                                            #
+#    You should have received a copy of the GNU General Public License       #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.  #
+#                                                                            #
+# ========================================================================== #
+
+
+import sys
+import os
+import re
+import subprocess
+import dataclasses
+
+from typing import Tuple
+from typing import List
+
+
+# =====
+@dataclasses.dataclass(frozen=True)
+class _Mkfs:
+    npart: int
+    fs: str
+    label: str
+    reserved: str
+    mount: str
+
+
+def _parse_script(script: str) -> Tuple[List[List[str]], List[_Mkfs]]:
+    parted: List[List[str]] = []
+    filesystems: List[_Mkfs] = []
+    npart = 1
+    for line in filter(None, script.split("\n")):
+        left: List[str]
+        (left, right) = (line.split("#", 1) + [""])[:2]  # type: ignore
+        left = left.split()  # type: ignore
+        if "mkpart" in left and ("primary" in left or "logical" in left):
+            assert len(left) >= 3, f"Too short mkpart command: {left}"
+            params = dict(re.findall(r"(\w+)=([^\s]+)", right))
+            filesystems.append(_Mkfs(
+                npart=npart,
+                fs=left[2],
+                label=params.get("label", ""),
+                reserved=params.get("reserved", ""),
+                mount=params.get("mount", ""),
+            ))
+            npart += 1
+        parted.append(left)
+    return (parted, filesystems)
+
+
+def _make_partition(path: str, npart: int) -> str:
+    device = os.path.basename(path)
+    return (f"{path}p{npart}" if device.startswith(("mmcblk", "loop")) else f"{path}{npart}")
+
+
+def _run_commands(cmds: List[List[str]]) -> None:
+    for cmd in cmds:
+        print("==>", " ".join(cmd))
+        sys.stdout.flush()
+        subprocess.run(cmd, check=True)
+
+
+def _format_disk(device_path: str) -> None:
+    (parted, _) = _parse_script(sys.stdin.read())
+    cmds: List[List[str]] = []
+    for cmd in parted:
+        cmds.append(["/usr/bin/parted", device_path, "-a", "optimal", "-s", *cmd])
+    cmds.append(["/usr/bin/partprobe", device_path])
+    cmds.append(["/usr/bin/partx", "-vu", device_path])
+    _run_commands(cmds)
+
+
+def _mkfs_disk(device_path: str) -> None:
+    (_, filesystems) = _parse_script(sys.stdin.read())
+    cmds: List[List[str]] = []
+    for mkfs in filesystems:
+        cmd: List[str] = []
+        if mkfs.fs == "fat32":
+            cmd.append("/usr/bin/mkfs.vfat")
+            if mkfs.label:
+                cmd.extend(["-n", mkfs.label])
+        elif mkfs.fs == "ext4":
+            cmd.append("/usr/bin/mkfs.ext4")
+            if mkfs.label:
+                cmd.extend(["-L", mkfs.label])
+            if mkfs.reserved:
+                cmd.extend(["-m", mkfs.reserved])
+        else:
+            raise RuntimeError(f"Unsupported filesystem: {mkfs.fs}")
+        cmd.append(_make_partition(device_path, mkfs.npart))
+        cmds.append(cmd)
+    cmds.append(["/usr/bin/partprobe", device_path])
+    cmds.append(["/usr/bin/partx", "-vu", device_path])
+    _run_commands(cmds)
+
+
+def _mount_disk(device_path: str, prefix_path: str, mount: bool) -> None:
+    (_, filesystems) = _parse_script(sys.stdin.read())
+    cmds: List[List[str]] = []
+    filesystems = sorted(filesystems, key=(lambda mkfs: len(list(filter(None, mkfs.mount.split("/"))))))
+    if not mount:
+        filesystems.reverse()
+    for mkfs in filesystems:
+        if mkfs.mount:
+            part_path = _make_partition(device_path, mkfs.npart)
+            if mount:
+                mount_path = prefix_path + "/" + mkfs.mount
+                cmds.append(["/usr/bin/mkdir", "-p", mount_path])
+                cmds.append(["/usr/bin/mount", part_path, mount_path])
+            else:
+                cmds.append(["/usr/bin/umount", part_path])
+    _run_commands(cmds)
+
+
+# =====
+def main() -> None:
+    if len(sys.argv) <= 2:
+        raise SystemExit(f"Usage: {sys.argv[0]} <format|mount|umount> ...")
+    if sys.argv[1] == "format":
+        if len(sys.argv) != 3:
+            raise SystemExit(f"Usage: cat script | {sys.argv[0]} format /dev/path")
+        _format_disk(sys.argv[2])
+    elif sys.argv[1] == "mkfs":
+        if len(sys.argv) != 3:
+            raise SystemExit(f"Usage: cat script | {sys.argv[0]} format /dev/path")
+        _mkfs_disk(sys.argv[2])
+    elif sys.argv[1] == "mount":
+        if len(sys.argv) != 4:
+            raise SystemExit(f"Usage: {sys.argv[0]} mount /dev/path /prefix/path")
+        _mount_disk(sys.argv[2], sys.argv[3], True)
+    elif sys.argv[1] == "umount":
+        if len(sys.argv) != 3:
+            raise SystemExit(f"Usage: {sys.argv[0]} umount /dev/path")
+        _mount_disk(sys.argv[2], "/dev/null", False)
+    else:
+        raise SystemExit(f"Usage: {sys.argv[0]} <format|mount|umount> ...")
+
+
+if __name__ == "__main__":
+    main()

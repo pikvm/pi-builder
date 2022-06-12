@@ -40,9 +40,6 @@ PIKVM_REPO_KEY ?= 912C773ABBD1B584
 BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
-CARD_DATA_FS_TYPE ?=
-CARD_DATA_FS_FLAGS ?=
-CARD_DATA_BEGIN_AT ?= 4352MiB
 
 QEMU_PREFIX ?= /usr
 QEMU_RM ?= 1
@@ -87,11 +84,6 @@ _RPI_BASE_IMAGE = $(_IMAGES_PREFIX)-base-$(BOARD)
 _RPI_RESULT_IMAGE = $(PROJECT)-$(_IMAGES_PREFIX)-result-$(BOARD)
 _RPI_RESULT_ROOTFS_TAR = $(_CACHE_DIR)/result-rootfs.tar
 _RPI_RESULT_ROOTFS = $(_CACHE_DIR)/result-rootfs
-
-_CARD_P = $(if $(findstring mmcblk,$(CARD)),p,$(if $(findstring loop,$(CARD)),p,))
-_CARD_BOOT = $(CARD)$(_CARD_P)1
-_CARD_ROOTFS = $(CARD)$(_CARD_P)2
-_CARD_DATA = $(CARD)$(_CARD_P)3
 
 
 # =====
@@ -329,7 +321,7 @@ __DOCKER_RUN_TMP = $(DOCKER) run \
 
 __DOCKER_RUN_TMP_PRIVILEGED = $(DOCKER) run \
 		--rm \
-		--tty \
+		--interactive \
 		--privileged \
 		--volume $(shell pwd)/$(_CACHE_DIR):/root/$(_CACHE_DIR) \
 		--workdir /root/$(_CACHE_DIR)/.. \
@@ -341,31 +333,14 @@ clean-all: $(__DEP_TOOLBOX) clean
 	rm -rf $(_CACHE_DIR)
 
 
+# FIXME: add generic offset from 32Mb
 format: $(__DEP_TOOLBOX)
 	$(call check_build)
 	$(call say,"Formatting $(CARD)")
-	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
-		set -x \
-		&& set -e \
-		&& dd if=/dev/zero of=$(CARD) bs=1M count=32 \
-		&& partprobe $(CARD) \
-	"
-	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
-		set -x \
-		&& set -e \
-		&& parted $(CARD) -s mklabel msdos \
-		&& parted $(CARD) -a optimal -s mkpart primary fat32 $(if $(findstring generic,$(BOARD)),32MiB,0) 256MiB \
-		&& parted $(CARD) -a optimal -s mkpart primary ext4 256MiB $(if $(CARD_DATA_FS_TYPE),$(CARD_DATA_BEGIN_AT),100%) \
-		&& $(if $(CARD_DATA_FS_TYPE),parted $(CARD) -a optimal -s mkpart primary $(CARD_DATA_FS_TYPE) $(CARD_DATA_BEGIN_AT) 100%,/bin/true) \
-		&& partprobe $(CARD) \
-	"
-	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
-		set -x \
-		&& set -e \
-		&& yes | mkfs.vfat -n PIBOOT $(_CARD_BOOT) \
-		&& yes | mkfs.ext4 -L PIROOT $(_CARD_ROOTFS) \
-		&& $(if $(CARD_DATA_FS_TYPE),yes | mkfs.$(CARD_DATA_FS_TYPE) $(CARD_DATA_FS_FLAGS) $(_CARD_DATA),/bin/true) \
-	"
+	$(__DOCKER_RUN_TMP_PRIVILEGED) dd if=/dev/zero of=$(CARD) bs=1M count=32
+	$(__DOCKER_RUN_TMP_PRIVILEGED) partprobe $(CARD)
+	cat disk.conf | $(__DOCKER_RUN_TMP_PRIVILEGED) /tools/disk format $(CARD)
+	cat disk.conf | $(__DOCKER_RUN_TMP_PRIVILEGED) /tools/disk mkfs $(CARD)
 	$(call say,"Format complete")
 
 
@@ -384,15 +359,13 @@ extract: $(__DEP_TOOLBOX)
 
 install: extract format install-uboot
 	$(call say,"Installing to $(CARD)")
-	$(__DOCKER_RUN_TMP_PRIVILEGED) bash -c " \
-		mkdir -p mnt/boot mnt/rootfs \
-		&& mount $(_CARD_BOOT) mnt/boot \
-		&& mount $(_CARD_ROOTFS) mnt/rootfs \
-		&& rsync -a --quiet $(_RPI_RESULT_ROOTFS)/boot/* mnt/boot \
-		&& rsync -a --quiet $(_RPI_RESULT_ROOTFS)/* mnt/rootfs --exclude boot \
-		&& mkdir mnt/rootfs/boot \
-		&& umount mnt/boot mnt/rootfs \
-	"
+	cat disk.conf | $(__DOCKER_RUN_TMP_PRIVILEGED) bash -c ' \
+		set -ex \
+		&& DISK_CONF=$$(</dev/stdin) \
+		&& (echo -e "$$DISK_CONF" | /tools/disk mount $(CARD) mnt) \
+		&& rsync -a --quiet $(_RPI_RESULT_ROOTFS)/* mnt \
+		&& (echo -e "$$DISK_CONF" | /tools/disk umount $(CARD)) \
+	'
 	$(call say,"Installation complete")
 
 
