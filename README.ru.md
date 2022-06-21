@@ -98,13 +98,13 @@ CARD ?= /dev/mmcblk0
 ```shell
 $ git clone https://github.com/pikvm/pi-builder
 $ cd pi-builder
-$ make rpi3
+$ make rpi4
 $ make install
 ```
 
 Как собрать систему со своим списком стейжей:
 ```shell
-$ make os BOARD=rpi3 STAGES="__init__ os __cleanup__"
+$ make os BOARD=rpi4 STAGES="__init__ os __cleanup__"
 ```
 
 Остальные команды и заданную сборочную конфигурацию можно посмотреть так:
@@ -113,7 +113,7 @@ $ make
 
 ===== Available commands  =====
     make                # Print this help
-    rpi|rpi2|rpi3|rpi4|zero|zerow|zero2w  # Build Arch-ARM rootfs with pre-defined config
+    rpi2|rpi3|rpi4|zero2w  # Build Arch-ARM rootfs with pre-defined config
     make shell          # Run Arch-ARM shell
     make binfmt         # Before build
     make scan           # Find all RPi devices in the local network

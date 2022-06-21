@@ -24,7 +24,7 @@
 -include config.mk
 
 PROJECT ?= common
-BOARD ?= rpi
+BOARD ?= rpi4
 ARCH ?= arm
 UBOOT ?=
 STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth no-audit ro ssh-keygen __cleanup__
@@ -63,7 +63,6 @@ _RPI_ROOTFS_TYPE = ${shell bash -c " \
 	case '$(ARCH)' in \
 		arm) \
 			case '$(BOARD)' in \
-				rpi|zero|zerow) echo 'rpi';; \
 				rpi2|rpi3|rpi4|zero2w) echo 'rpi-armv7';; \
 				generic) echo 'armv7';; \
 			esac;; \
@@ -146,7 +145,7 @@ all:
 	@ echo
 	$(call say,"Available commands")
 	@ echo "    make                     # Print this help"
-	@ echo "    make rpi|rpi2|rpi3|rpi4|zero|zerow|zero2w  # Build Arch-ARM rootfs with pre-defined config"
+	@ echo "    make rpi2|rpi3|rpi4|zero2w  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell               # Run Arch-ARM shell"
 	@ echo "    make toolbox             # Build the toolbox image"
 	@ echo "    make binfmt              # Configure ARM binfmt on the host system"
@@ -159,15 +158,12 @@ all:
 	@ echo
 
 
-rpi: BOARD=rpi
 rpi2: BOARD=rpi2
 rpi3: BOARD=rpi3
 rpi4: BOARD=rpi4
-zero: BOARD=zero
-zerow: BOARD=zerow
 zero2w: BOARD=zero2w
 generic: BOARD=generic
-rpi rpi2 rpi3 rpi4 zero zerow zero2w generic: os
+rpi2 rpi3 rpi4 zero2w generic: os
 
 
 run: $(__DEP_BINFMT)
