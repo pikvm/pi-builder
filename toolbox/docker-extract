@@ -98,15 +98,11 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
                             _logger.debug("::    Removing whiteout file: %s", whiteout)
                             os.unlink(whiteout)
 
-                try:
-                    layer_tar.extractall(
-                        path=root_path,
-                        members=[member for member in members if "/.wh." not in member.path],  # type: ignore
-                        numeric_owner=True,
-                    )
-                except OSError:
-                    print(os.system("/usr/bin/ls -ld ./.cache/result-rootfs/usr/lib/firmware/brcm/brcmfmac43455-sdio.AW-CM256SM.txt"))
-                    raise
+                layer_tar.extractall(
+                    path=root_path,
+                    members=[member for member in members if "/.wh." not in member.path],  # type: ignore
+                    numeric_owner=True,
+                )
 
 
 def _patch_os_symlink() -> None:
