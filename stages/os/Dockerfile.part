@@ -45,6 +45,8 @@ RUN pacman --noconfirm --ask=4 -Syy \
 		iftop \
 		iotop \
 		strace \
+		usbutils \
+		pciutils \
 		lsof \
 		git \
 		jshon \
