@@ -19,10 +19,14 @@ RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 RUN sed -i -e "s/^CheckSpace/#!!!CheckSpace/g" /etc/pacman.conf
 
 RUN pacman --noconfirm --ask=4 -Syy \
-	&& pacman --needed --noconfirm --ask=4 -S \
-		glibc \
-		pacman \
-	&& pacman-db-upgrade \
+    && pacman --needed --noconfirm --ask=4 -S \
+        glibc \
+        openssl \
+        openssl-1.0 \
+        openssl-1.1 \
+    && pacman --needed --noconfirm --ask=4 -S \
+        pacman \
+    && pacman-db-upgrade \
 	&& pacman --noconfirm --ask=4 -Syu \
 	&& pacman --needed --noconfirm --ask=4 -S \
 		p11-kit \
