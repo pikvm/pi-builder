@@ -78,6 +78,9 @@ ENV PATH="/usr/lib/ccache/bin/:${PATH}"
 RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf \
 	&& systemctl enable systemd-resolved
 
+# https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
+RUN ln -s /dev/null /etc/systemd/network/99-default.link
+
 COPY stages/os/gitconfig /etc/skel/.gitconfig
 COPY stages/os/gitconfig /root/.gitconfig
 COPY stages/os/gitconfig /home/alarm/.gitconfig
