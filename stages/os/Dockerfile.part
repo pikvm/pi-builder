@@ -79,6 +79,9 @@ RUN sed -i -e "s/^#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
 RUN sed -i -e "s/ \!ccache / ccache /g" /etc/makepkg.conf
 ENV PATH="/usr/lib/ccache/bin/:${PATH}"
 
+RUN sed -i -e '/\<pam_systemd\.so\>/ s/^#*/#/' /etc/pam.d/system-login \
+	&& sed -i -e '/\<pam_systemd_home\.so\>/ s/^#*/#/' /etc/pam.d/system-auth
+
 RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf \
 	&& systemctl enable systemd-resolved
 
