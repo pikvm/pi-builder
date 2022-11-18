@@ -1,0 +1,12 @@
+[Match]
+Name=eth0
+
+[Network]
+DHCP=yes
+DNSSEC=no
+
+[DHCP]
+# Use same IP by forcing to use MAC address for clientID
+ClientIdentifier=mac
+# https://github.com/pikvm/pikvm/issues/583
+RouteMetric=10

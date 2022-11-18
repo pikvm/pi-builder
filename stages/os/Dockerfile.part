@@ -84,6 +84,7 @@ RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf \
 
 # https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
 RUN ln -s /dev/null /etc/systemd/network/99-default.link
+ADD stages/os/eth0.network /etc/systemd/network/eth0.network
 
 COPY stages/os/gitconfig /etc/skel/.gitconfig
 COPY stages/os/gitconfig /root/.gitconfig
