@@ -71,8 +71,8 @@ RUN pacman --noconfirm --ask=4 -Syy \
 	&& rm -rf /var/cache/pacman/pkg/*
 
 # https://github.com/pikvm/pikvm/issues/190
+RUN systemctl disable haveged || true
 RUN echo 'RNGD_OPTS="-o /dev/random -r /dev/hwrng -x jitter -x pkcs11 -x rtlsdr"' > /etc/conf.d/rngd \
-	&& systemctl disable haveged \
 	&& systemctl enable rngd
 
 RUN sed -i -e "s/^#MAKEFLAGS=.*/MAKEFLAGS=-j5/g" /etc/makepkg.conf
