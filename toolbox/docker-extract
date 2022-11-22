@@ -70,7 +70,7 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
         _logger.debug(":: Extracting layer: %s", layer_path)
 
         with contextlib.closing(image_tar.extractfile(layer_path)) as layer_file:
-            with tarfile.TarFile(fileobj=layer_file, errorlevel=1) as layer_tar:
+            with _TarFile(fileobj=layer_file, errorlevel=1) as layer_tar:
                 members = layer_tar.getmembers()
 
                 for member in members:
@@ -92,10 +92,10 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
                     elif "/.wh." in member_path:
                         whiteout = member_path.replace("/.wh.", "/")
                         if os.path.isdir(whiteout) and not os.path.islink(whiteout):
-                            _logger.debug("::    Removing whiteout dir: %s", whiteout)
+                            _logger.debug("::    Removing whiteout D: %s", whiteout)
                             shutil.rmtree(whiteout)
                         else:
-                            _logger.debug("::    Removing whiteout file: %s", whiteout)
+                            _logger.debug("::    Removing whiteout F: %s", whiteout)
                             os.unlink(whiteout)
 
                 layer_tar.extractall(
@@ -105,16 +105,27 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: st
                 )
 
 
-def _patch_os_symlink() -> None:
-    # XXX: symlinks hack, see tarfile.py:2209 for details
-    orig_os_symlink = os.symlink
+class _TarFile(tarfile.TarFile):
+    def makefile(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        if os.path.lexists(targetpath) and not os.path.isfile(targetpath):
+            os.unlink(targetpath)
+        super().makefile(tarinfo, targetpath)
 
-    def rewrite_symlink(src: str, dest: str) -> None:
-        if os.path.islink(dest) or os.path.exists(dest):
-            os.unlink(dest)
-        orig_os_symlink(src, dest)
+    def makefifo(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        self.__remove(targetpath)
+        super().makefifo(tarinfo, targetpath)
 
-    os.symlink = rewrite_symlink  # type: ignore
+    def makedev(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        self.__remove(targetpath)
+        super().makedev(tarinfo, targetpath)
+
+    def makelink(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        self.__remove(targetpath)
+        super().makelink(tarinfo, targetpath)
+
+    def __remove(self, targetpath: str) -> None:
+        if os.path.lexists(targetpath):
+            os.unlink(targetpath)
 
 
 # =====
@@ -141,7 +152,6 @@ def main() -> None:
             print("\n".join(_get_image_layers(image_tar)))
 
         else:
-            _patch_os_symlink()
             _extract_rootfs(image_tar, _get_image_layers(image_tar), options.root)
 
 
