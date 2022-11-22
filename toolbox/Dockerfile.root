@@ -12,7 +12,7 @@ RUN pacman --noconfirm --ask=4 -Syy \
 	&& pacman --needed --noconfirm --ask=4 -S \
 		pacman \
 	&& pacman-db-upgrade \
-	&& pacman --noconfirm --ask=4 -Syu \
+	&& pacman-key --init \
 	&& pacman --needed --noconfirm --ask=4 -S \
 		p11-kit \
 		archlinux-keyring \
