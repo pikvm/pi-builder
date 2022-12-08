@@ -1,0 +1,17 @@
+## Install fail2ban and dhcp-helper
+RUN pacman --needed --noconfirm --ask=4 -Sy
+RUN pacman --needed --noconfirm --ask=4 -S \
+    fail2ban \
+    dhcp-helper
+## Configure and enable dhcp-helper
+RUN echo "SERVER=50.31.131.13" >> /etc/conf.d/dhcp-helper && \
+    sed -i '/ExecStart/i -s $SERVER/' /usr/lib/systemd/system/dhcp-helper.service
+RUN systemctl enable dhcp-helper
+## Configure and enable fail2ban
+COPY stages/spider/fail2ban.local /etc/fail2ban/fail2ban.local
+COPY stages/spider/jail.local /etc/fail2ban/jail.local
+RUN  systemctl enable fail2ban
+## Configure network for spider
+COPY stages/spider/wlan0.network /etc/systemd/network/wlan0.network
+COPY stages/spider/eth0.network /etc/systemd/network/eth0.network
+COPY stages/spider/wpa_supplicant-wlan0.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf

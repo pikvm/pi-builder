@@ -1,0 +1,17 @@
+[Match]
+Name=wlan0
+
+[Network]
+Address=204.93.180.153/27
+DNS=64.202.97.1
+DHCP=no
+DNSSEC=no
+
+# Use same IP by forcing to use MAC address for clientID
+[DHCP]
+ClientIdentifier=mac
+
+[Route]
+Destination=0.0.0.0/0
+Gateway=204.93.180.129
+Metric=0

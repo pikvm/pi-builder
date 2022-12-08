@@ -1,0 +1,13 @@
+[Match]
+Name=eth0
+
+[Network]
+Address=50.31.129.249/29
+DNS=64.202.97.1
+DNSSEC=no
+
+[Route]
+Source=50.31.129.248/29
+Destination=0.0.0.0/0
+Gateway=50.31.129.249
+Metric=2048
