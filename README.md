@@ -94,7 +94,7 @@ Some files, like `/etc/host` and `/etc/hostname`, are automatically filled by do
 
 -----
 # TL;DR
-How to build a system for Raspberry Pi 3 and install it to the SD card:
+How to build a system for Raspberry Pi 4 and install it to the SD card:
 ```shell
 $ git clone https://github.com/pikvm/pi-builder
 $ cd pi-builder
