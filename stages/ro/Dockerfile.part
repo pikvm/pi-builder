@@ -13,7 +13,6 @@ RUN mkdir -p /var/lib/private && chmod 700 /var/lib/private \
 	&& mkdir -p /var/lib/dhclient && chmod 755 /var/lib/dhclient
 
 COPY stages/ro/fstab /etc/
-COPY stages/ro/e2fsck.conf /etc/
 COPY stages/ro/ro /usr/local/bin/
 COPY stages/ro/rw /usr/local/bin/
 COPY stages/ro/journald.conf /etc/systemd/
