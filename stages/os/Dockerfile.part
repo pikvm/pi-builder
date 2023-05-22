@@ -7,7 +7,7 @@ ENV LC_ALL en_US.UTF-8
 RUN rm -f /etc/localtime \
 	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 
-RUN echo "HOOKS=(base udev block filesystems fsck)" >> /etc/mkinitcpio.conf
+RUN echo "HOOKS=(base udev block filesystems)" >> /etc/mkinitcpio.conf
 
 RUN sed -i -e "s|\<root=/dev/mmcblk0p2\>|root=LABEL=PIROOT|g" /boot/cmdline.txt
 RUN sed -i -e "s|^/dev/mmcblk0p1\>|LABEL=PIBOOT|g" /etc/fstab
