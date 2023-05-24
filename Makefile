@@ -27,7 +27,7 @@ PROJECT ?= common
 BOARD ?= rpi4
 ARCH ?= arm
 UBOOT ?=
-STAGES ?= __init__ os pikvm-repo watchdog no-bluetooth no-audit ro ssh-keygen __cleanup__
+STAGES ?= __init__ os pikvm-repo watchdog rootdelay no-bluetooth no-audit ro ssh-keygen __cleanup__
 DOCKER ?= docker
 
 HOSTNAME ?= pi
