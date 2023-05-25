@@ -32,16 +32,13 @@ import contextlib
 import argparse
 import logging
 
-from typing import List
-from typing import Dict
-
 
 # =====
 _logger = logging.getLogger("docker-extract")
 
 
 # =====
-def _get_image_manifest(image_tar: tarfile.TarFile) -> Dict:
+def _get_image_manifest(image_tar: tarfile.TarFile) -> dict:
     _logger.debug(":: Reading image manifest")
     with contextlib.closing(image_tar.extractfile("manifest.json")) as manifest_file:
         manifest = json.load(manifest_file)  # type: ignore
@@ -49,14 +46,14 @@ def _get_image_manifest(image_tar: tarfile.TarFile) -> Dict:
         return manifest[0]
 
 
-def _get_image_layers(image_tar: tarfile.TarFile) -> List[str]:
+def _get_image_layers(image_tar: tarfile.TarFile) -> list[str]:
     layers = _get_image_manifest(image_tar)["Layers"]
     for layer_path in layers:
         _logger.debug("::    Layer: %s", layer_path)
     return layers
 
 
-def _extract_rootfs(image_tar: tarfile.TarFile, layers: List[str], root_path: str) -> None:
+def _extract_rootfs(image_tar: tarfile.TarFile, layers: list[str], root_path: str) -> None:
     # https://github.com/moby/moby/blob/master/image/spec/v1.2.md
 
     if os.getuid() != 0:

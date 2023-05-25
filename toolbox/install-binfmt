@@ -27,8 +27,6 @@ import dataclasses
 import argparse
 import logging
 
-from typing import Dict
-
 
 # =====
 @dataclasses.dataclass(frozen=True)
@@ -76,7 +74,7 @@ def _check_binfmt(mount_path: str, binfmt: _Binfmt, interpreter_path: str) -> bo
         _logger.info(":: Found existent %s binfmt handler", binfmt.name)
 
         with open(binfmt_path) as binfmt_file:
-            current_params: Dict[str, str] = dict(
+            current_params: dict[str, str] = dict(
                 (row.split(" ", 1) + [""])[:2]  # type: ignore
                 for row in filter(None, binfmt_file.read().split("\n"))
             )

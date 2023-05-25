@@ -30,9 +30,6 @@ import re
 import subprocess
 import dataclasses
 
-from typing import Tuple
-from typing import List
-
 
 # =====
 @dataclasses.dataclass(frozen=True)
@@ -44,12 +41,12 @@ class _Mkfs:
     mount: str
 
 
-def _parse_script(script: str) -> Tuple[List[List[str]], List[_Mkfs]]:
-    parted: List[List[str]] = []
-    filesystems: List[_Mkfs] = []
+def _parse_script(script: str) -> tuple[list[list[str]], list[_Mkfs]]:
+    parted: list[list[str]] = []
+    filesystems: list[_Mkfs] = []
     npart = 1
     for line in filter(None, script.split("\n")):
-        left: List[str]
+        left: list[str]
         (left, right) = (line.split("#", 1) + [""])[:2]  # type: ignore
         left = left.split()  # type: ignore
         if "mkpart" in left and ("primary" in left or "logical" in left):
@@ -72,7 +69,7 @@ def _make_partition(path: str, npart: int) -> str:
     return (f"{path}p{npart}" if device.startswith(("mmcblk", "loop")) else f"{path}{npart}")
 
 
-def _run_commands(cmds: List[List[str]]) -> None:
+def _run_commands(cmds: list[list[str]]) -> None:
     for cmd in cmds:
         print("==>", " ".join(cmd))
         sys.stdout.flush()
@@ -81,7 +78,7 @@ def _run_commands(cmds: List[List[str]]) -> None:
 
 def _format_disk(device_path: str) -> None:
     (parted, _) = _parse_script(sys.stdin.read())
-    cmds: List[List[str]] = []
+    cmds: list[list[str]] = []
     for cmd in parted:
         cmds.append(["/usr/bin/parted", device_path, "-a", "optimal", "-s", *cmd])
     cmds.append(["/usr/bin/partprobe", device_path])
@@ -91,9 +88,9 @@ def _format_disk(device_path: str) -> None:
 
 def _mkfs_disk(device_path: str) -> None:
     (_, filesystems) = _parse_script(sys.stdin.read())
-    cmds: List[List[str]] = []
+    cmds: list[list[str]] = []
     for mkfs in filesystems:
-        cmd: List[str] = []
+        cmd: list[str] = []
         if mkfs.fs == "fat32":
             cmd.append("/usr/bin/mkfs.vfat")
             if mkfs.label:
@@ -115,7 +112,7 @@ def _mkfs_disk(device_path: str) -> None:
 
 def _mount_disk(device_path: str, prefix_path: str, mount: bool) -> None:
     (_, filesystems) = _parse_script(sys.stdin.read())
-    cmds: List[List[str]] = []
+    cmds: list[list[str]] = []
     filesystems = sorted(filesystems, key=(lambda mkfs: len(list(filter(None, mkfs.mount.split("/"))))))
     if not mount:
         filesystems.reverse()
