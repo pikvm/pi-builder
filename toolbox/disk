@@ -3,10 +3,7 @@
 #                                                                            #
 #    disk - A parted/mkfs wrapper.                                           #
 #                                                                            #
-#    Partially based on https://github.com/larsks/undocker and contains      #
-#    many major fixes for image spec v1.2.                                   #
-#                                                                            #
-#    Copyright (C) 2022  Maxim Devaev <mdevaev@gmail.com>                    #
+#    Copyright (C) 2022-2023  Maxim Devaev <mdevaev@gmail.com>               #
 #                                                                            #
 #    This program is free software: you can redistribute it and/or modify    #
 #    it under the terms of the GNU General Public License as published by    #
