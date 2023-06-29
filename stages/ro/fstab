@@ -6,4 +6,3 @@ tmpfs /var/lib/dhcpcd    tmpfs  mode=0750               0 0
 tmpfs /var/log           tmpfs  nodev,nosuid            0 0
 tmpfs /var/tmp           tmpfs  nodev,nosuid            0 0
 tmpfs /tmp               tmpfs  nodev,nosuid,mode=1777  0 0
-tmpfs /run               tmpfs  nodev,nosuid,mode=0755  0 0
