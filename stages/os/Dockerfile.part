@@ -59,6 +59,7 @@ RUN pacman --noconfirm --ask=4 -Syy \
 		ccache \
 		screen \
 		rpi-eeprom \
+		dosfstools \
 	&& case "$ARCH" in \
 		arm) \
 			case "$BOARD" in \
