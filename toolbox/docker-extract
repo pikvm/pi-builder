@@ -130,8 +130,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--list-layers", action="store_true", help="List layers in an image")
     parser.add_argument("--list-tags", action="store_true", help="List tags contained in archive")
-    parser.add_argument("-d", "--debug", action="store_const", const=logging.DEBUG, dest="log_level")
-    parser.add_argument("-o", "--root", default="rootfs", help="Output directory (defaults to 'rootfs')")
+    parser.add_argument("--debug", action="store_const", const=logging.DEBUG, dest="log_level")
+    parser.add_argument("--remove-root", action="store_true", help="Remove destination directory before exporting")
+    parser.add_argument("--root", default="rootfs", help="Output directory (defaults to 'rootfs')")
+    parser.add_argument("--set-hostname", default="", help="Set /etc/hostname")
+    parser.add_argument("--remove-qemu", action="store_true", help="Remove /usr/bin/qemu-*-static{,-orig}")
     parser.add_argument("input")
     parser.set_defaults(log_level=logging.INFO)
 
@@ -149,7 +152,29 @@ def main() -> None:
             print("\n".join(_get_image_layers(image_tar)))
 
         else:
+            if options.remove_root:
+                if os.path.exists(options.root):
+                    _logger.info(":: Removing an old rootfs %r ...", options.root)
+                    shutil.rmtree(options.root)
+
+            _logger.info(":: Extracting rootfs to %r ...", options.root)
             _extract_rootfs(image_tar, _get_image_layers(image_tar), options.root)
+
+            if options.set_hostname:
+                path = os.path.join(options.root, "etc/hostname")
+                _logger.info(":: Setting up the hostname in %r ...", path)
+                with open(path, "w") as file:
+                    file.write(options.set_hostname)
+
+            if options.remove_qemu:
+                _logger.info(":: Removing QEMU ...")
+                for name in os.listdir(os.path.join(options.root, "usr/bin")):
+                    if name.startswith("qemu-") and name.endswith(("-static", "-static-orig")):
+                        path = os.path.join(options.root, "usr/bin", name)
+                        _logger.info("::    Removing %r ...", path)
+                        os.remove(path)
+
+            _logger.info(":: Success!")
 
 
 # =====

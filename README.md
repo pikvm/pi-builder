@@ -118,8 +118,7 @@ $ make
     make binfmt         # Before build
     make scan           # Find all RPi devices in the local network
     make clean          # Remove the generated rootfs
-    make format         # Format /dev/mmcblk0 to /dev/mmcblk0p1 (vfat), /dev/mmcblk0p2 (ext4)
-    make install        # Install rootfs to partitions on /dev/mmcblk0
+    make install         # Format /dev/mmcblk0 and flash the filesystem
 
 ===== Running configuration =====
     PROJECT = common
@@ -134,7 +133,6 @@ $ make
 
     CARD = /dev/mmcblk0
 
-    QEMU_PREFIX =
     QEMU_RM     = 1
 ```
 

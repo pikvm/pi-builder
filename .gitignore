@@ -1,4 +1,5 @@
-/.mnt/
+/qemu/.pkg.*/
+/base/*.tgz*
 /.cache/
 /.build/
 /.built.conf

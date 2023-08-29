@@ -1,0 +1,75 @@
+# ========================================================================== #
+#                                                                            #
+#    pi-builder - extensible tool to build Arch Linux ARM for Raspberry Pi   #
+#                 on x86_64 host using Docker.                               #
+#                                                                            #
+#    Copyright (C) 2018-2023  Maxim Devaev <mdevaev@gmail.com>               #
+#                                                                            #
+#    This program is free software: you can redistribute it and/or modify    #
+#    it under the terms of the GNU General Public License as published by    #
+#    the Free Software Foundation, either version 3 of the License, or       #
+#    (at your option) any later version.                                     #
+#                                                                            #
+#    This program is distributed in the hope that it will be useful,         #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of          #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
+#    GNU General Public License for more details.                            #
+#                                                                            #
+#    You should have received a copy of the GNU General Public License       #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.  #
+#                                                                            #
+# ========================================================================== #
+
+
+QEMU_PKG_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
+
+
+# =====
+all:
+	all
+
+
+qemu-arm: qemu-arm-static qemu-arm-static-orig
+qemu-aarch64: qemu-aarch64-static qemu-aarch64-static-orig
+
+
+qemu-arm-static qemu-aarch64-static:
+	$(eval _arch = $(subst -static,,$(subst qemu-,,$@)))
+	gcc \
+			-static \
+			-DQEMU_ARCH=\"$(_arch)\" \
+			$(if $(filter-out aarch64,$(_arch)),-m32,-m64) \
+			qemu-wrapper.c \
+		-o qemu-$(_arch)-static
+
+
+qemu-arm-static-orig qemu-aarch64-static-orig:
+	$(eval _arch = $(subst -static-orig,,$(subst qemu-,,$@)))
+	$(eval _pkg = ./.pkg.$(_arch))
+	# Using i386 QEMU because of this:
+	#   - https://bugs.launchpad.net/qemu/+bug/1805913
+	#   - https://lkml.org/lkml/2018/12/27/155
+	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
+	rm -rf $(_pkg)
+	mkdir -p $(_pkg)
+	curl -L -f $(QEMU_PKG_URL)/`curl -s -S -L -f $(QEMU_PKG_URL)/ \
+			| grep qemu-user-static \
+			| grep _$(if $(filter-out aarch64,$(_arch)),i386,amd64).deb \
+			| sort -n \
+			| tail -n 1 \
+			| sed -n 's/.*href="\([^"]*\).*/\1/p'` \
+		-o $(_pkg)/qemu-user-static.deb
+	cd $(_pkg) \
+		&& ar vx qemu-user-static.deb \
+		&& tar -xJf data.tar.xz
+	cp $(_pkg)/usr/bin/qemu-$(_arch)-static qemu-$(_arch)-static-orig
+	rm -rf $(_pkg)
+
+
+clean:
+	@true
+clean-all:
+	rm -rf .pkg.* qemu-*-static{,-orig}
+
+
+.PHONY: all qemu-wrapper qemu-orig clean clean-all

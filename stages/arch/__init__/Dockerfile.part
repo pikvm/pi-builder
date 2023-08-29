@@ -1,0 +1,6 @@
+FROM scratch
+
+ADD %BASE_ROOTFS_TGZ% /
+COPY %QEMU%* /usr/bin/
+RUN mkdir -p /etc/pacman.d/hooks \
+	&& ln -s /dev/null /etc/pacman.d/hooks/30-systemd-tmpfiles.hook
