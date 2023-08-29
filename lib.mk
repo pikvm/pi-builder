@@ -41,3 +41,9 @@ define die
 @ tput -Txterm sgr0
 @ exit 1
 endef
+
+
+define cachetag
+test -n "$1"
+echo "Signature: 8a477f597d28d172789f06886806bc55" > "$1/CACHEDIR.TAG"
+endef

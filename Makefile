@@ -193,6 +193,7 @@ os: $(__DEP_BINFMT) _buildctx
 _buildctx: _base_tgz _qemu
 	$(call say,"Assembling main Dockerfile")
 	$(eval _tgz = $(_IMAGES_PREFIX).base.tgz)
+	$(eval _init = $(_BUILD_DIR)/stages/__init__/Dockerfile.part)
 	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
 	#
@@ -204,17 +205,18 @@ _buildctx: _base_tgz _qemu
 	sed -i \
 			-e 's|%BASE_ROOTFS_TGZ%|$(_tgz)|g' \
 			-e 's|%QEMU%|qemu-$(ARCH)-static|g' \
-		$(_BUILD_DIR)/stages/__init__/Dockerfile.part
+		$(_init)
 	for var in BOARD ARCH LOCALE TIMEZONE REPO_URL PIKVM_REPO_URL PIKVM_REPO_KEY; do \
-		echo -e "\nARG $$var\nENV $$var \$$$$var\n" >> $(_BUILD_DIR)/stages/__init__/Dockerfile.part; \
-	done
+		echo "ARG $$var" >> $(_init) \
+		&& echo "ENV $$var \$$$$var" >> $(_init) \
+	; done
 	#
 	echo -n > $(_BUILD_DIR)/Dockerfile
 	for stage in $(STAGES); do \
-		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_BUILD_DIR)/Dockerfile; \
-	done
+		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_BUILD_DIR)/Dockerfile \
+	; done
 	#
-	echo "Signature: 8a477f597d28d172789f06886806bc55" > "$(_BUILD_DIR)/CACHEDIR.TAG"
+	$(call cachetag,$(_BUILD_DIR))
 	$(call say,"Main Dockerfile is ready")
 
 
@@ -287,7 +289,7 @@ _cachedir: $(_CACHE_DIR)/CACHEDIR.TAG
 $(_CACHE_DIR)/CACHEDIR.TAG:
 	rm -rf $(_CACHE_DIR)
 	mkdir -p $(_CACHE_DIR)
-	echo "Signature: 8a477f597d28d172789f06886806bc55" > $(_CACHE_DIR)/CACHEDIR.TAG
+	$(call cachetag,$(_BUILD_DIR))
 
 
 # =====
