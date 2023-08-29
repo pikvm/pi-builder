@@ -29,7 +29,11 @@ all:
 toolbox:
 	test -n "$(DOCKER)"
 	test -n "$(_TOOLBOX_IMAGE)"
-	$(DOCKER) build --rm --tag $(_TOOLBOX_IMAGE) .
+	$(DOCKER) build \
+			--rm \
+			--tag $(_TOOLBOX_IMAGE) \
+			$(if $(call optbool,$(NC)),--no-cache,) \
+		.
 
 
 clean:

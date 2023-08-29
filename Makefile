@@ -32,6 +32,7 @@ BOARD ?= rpi4
 ARCH ?= arm
 STAGES ?= __init__ os pikvm-repo watchdog rootdelay no-bluetooth no-audit ro ssh-keygen __cleanup__
 export DOCKER ?= docker
+export NC ?=
 
 HOSTNAME ?= pi
 LOCALE ?= en_US
