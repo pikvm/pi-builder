@@ -21,17 +21,15 @@
 # ========================================================================== #
 
 
-DOCKER ?= docker
-IMAGE ?= pi-builder-toolbox
-
-
 # =====
 all:
 	true
 
 
 toolbox:
-	$(DOCKER) build --rm --tag $(IMAGE) .
+	test -n "$(DOCKER)"
+	test -n "$(_TOOLBOX_IMAGE)"
+	$(DOCKER) build --rm --tag $(_TOOLBOX_IMAGE) .
 
 
 clean:

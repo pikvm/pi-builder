@@ -31,19 +31,19 @@ OS ?= arch
 BOARD ?= rpi4
 ARCH ?= arm
 STAGES ?= __init__ os pikvm-repo watchdog rootdelay no-bluetooth no-audit ro ssh-keygen __cleanup__
-DOCKER ?= docker
+export DOCKER ?= docker
 
 HOSTNAME ?= pi
 LOCALE ?= en_US
 TIMEZONE ?= Europe/Moscow
-REPO_URL ?= https://de3.mirror.archlinuxarm.org
+export REPO_URL ?= https://de3.mirror.archlinuxarm.org
 PIKVM_REPO_URL ?= https://files.pikvm.org/repos/arch/
 PIKVM_REPO_KEY ?= 912C773ABBD1B584
 BUILD_OPTS ?=
 
 CARD ?= /dev/mmcblk0
 
-QEMU_PKG_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
+export QEMU_PKG_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
 QEMU_RM ?= 1
 
 
@@ -51,7 +51,7 @@ QEMU_RM ?= 1
 _OS_BOARD_ARCH = $(OS)-$(BOARD)-$(ARCH)
 
 _IMAGES_PREFIX = pi-builder.$(PROJECT).$(_OS_BOARD_ARCH)
-_TOOLBOX_IMAGE = pi-builder.$(PROJECT).toolbox
+export _TOOLBOX_IMAGE = pi-builder.$(PROJECT).toolbox
 
 _CACHE_DIR = ./.cache
 _BUILD_DIR = ./.build
@@ -137,7 +137,7 @@ shell: run
 
 toolbox:
 	$(call say,"Ensuring toolbox image")
-	$(MAKE) -C toolbox toolbox DOCKER=$(DOCKER) IMAGE=$(_TOOLBOX_IMAGE)
+	$(MAKE) -C toolbox toolbox
 	$(call say,"Toolbox image is ready")
 
 
@@ -219,13 +219,13 @@ _buildctx: _base_tgz _qemu
 
 _base_tgz:
 	$(call say,"Ensuring base rootfs")
-	$(MAKE) -C base $(_OS_BOARD_ARCH) REPO_URL=$(REPO_URL)
+	$(MAKE) -C base $(_OS_BOARD_ARCH)
 	$(call say,"Base rootfs is ready")
 
 
 _qemu:
 	$(call say,"Ensuring QEMU-$(ARCH)")
-	$(MAKE) -C qemu qemu-$(ARCH) QEMU_PKG_URL=$(QEMU_PKG_URL)
+	$(MAKE) -C qemu qemu-$(ARCH)
 	$(call say,"QEMU-$(ARCH) is ready")
 
 

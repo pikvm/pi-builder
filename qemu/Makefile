@@ -21,9 +21,6 @@
 # ========================================================================== #
 
 
-QEMU_PKG_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
-
-
 # =====
 all:
 	all
@@ -50,6 +47,7 @@ qemu-arm-static-orig qemu-aarch64-static-orig:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
+	test -n "$(QEMU_PKG_URL)"
 	rm -rf $(_pkg)
 	mkdir -p $(_pkg)
 	curl -L -f $(QEMU_PKG_URL)/`curl -s -S -L -f $(QEMU_PKG_URL)/ \
