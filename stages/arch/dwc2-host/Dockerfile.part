@@ -1,0 +1,3 @@
+RUN case "$BOARD" in \
+		rpi3|rpi4|zero2w) sed -i "1s;^;dtoverlay=dwc2,dr_mode=host\n;" /boot/config.txt;; \
+	esac
