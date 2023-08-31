@@ -31,28 +31,28 @@ qemu-aarch64: qemu-aarch64-static qemu-aarch64-static-orig
 
 
 qemu-arm-static qemu-aarch64-static:
-	$(eval _arch = $(subst -static,,$(subst qemu-,,$@)))
+	$(eval _guest_arch = $(subst -static,,$(subst qemu-,,$@)))
 	gcc \
 			-static \
-			-DQEMU_ARCH=\"$(_arch)\" \
-			$(if $(filter-out aarch64,$(_arch)),-m32,-m64) \
+			-DQEMU_GUEST_ARCH=\"$(_guest_arch)\" \
+			$(if $(filter-out aarch64,$(_guest_arch)),-m32,-m64) \
 			qemu-wrapper.c \
-		-o qemu-$(_arch)-static
+		-o qemu-$(_guest_arch)-static
 
 
 qemu-arm-static-orig qemu-aarch64-static-orig:
-	$(eval _arch = $(subst -static-orig,,$(subst qemu-,,$@)))
-	$(eval _pkg = ./.pkg.$(_arch))
+	$(eval _guest_arch = $(subst -static-orig,,$(subst qemu-,,$@)))
+	$(eval _pkg = ./.pkg.$(_guest_arch))
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
-	test -n "$(QEMU_PKG_URL)"
+	test -n "$(QEMU_REPO_URL)"
 	rm -rf $(_pkg)
 	mkdir -p $(_pkg)
-	curl -L -f $(QEMU_PKG_URL)/`curl -s -S -L -f $(QEMU_PKG_URL)/ \
+	curl -L -f $(QEMU_REPO_URL)/`curl -s -S -L -f $(QEMU_REPO_URL)/ \
 			| grep qemu-user-static \
-			| grep _$(if $(filter-out aarch64,$(_arch)),i386,amd64).deb \
+			| grep _$(if $(filter-out aarch64,$(_guest_arch)),i386,amd64).deb \
 			| sort -n \
 			| tail -n 1 \
 			| sed -n 's/.*href="\([^"]*\).*/\1/p'` \
@@ -60,7 +60,7 @@ qemu-arm-static-orig qemu-aarch64-static-orig:
 	cd $(_pkg) \
 		&& ar vx qemu-user-static.deb \
 		&& tar -xJf data.tar.xz
-	cp $(_pkg)/usr/bin/qemu-$(_arch)-static qemu-$(_arch)-static-orig
+	cp $(_pkg)/usr/bin/qemu-$(_guest_arch)-static qemu-$(_guest_arch)-static-orig
 	rm -rf $(_pkg)
 
 

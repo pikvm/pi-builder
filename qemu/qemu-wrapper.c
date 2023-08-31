@@ -12,9 +12,9 @@ int main(int argc, char **argv, char **envp) {
     memcpy(&new[3], &argv[1], sizeof(*argv) * (argc - 1));
     new[argc + 2] = NULL;
 
-    int retval = execve("/usr/bin/qemu-" QEMU_ARCH "-static-orig", new, envp);
+    int retval = execve("/usr/bin/qemu-" QEMU_GUEST_ARCH "-static-orig", new, envp);
 	if (retval != 0) {
-		perror("Can't execve(/usr/bin/qemu-" QEMU_ARCH "-static-orig)");
+		perror("Can't execve(/usr/bin/qemu-" QEMU_GUEST_ARCH "-static-orig)");
 	}
 	return retval;
 }
