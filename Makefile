@@ -33,8 +33,8 @@ export NC ?=
 
 PROJECT ?= common
 OS ?= arch
-BOARD ?= rpi4
-ARCH ?= arm
+export BOARD ?= rpi4
+export ARCH ?= arm
 STAGES ?= __init__ os pikvm-repo watchdog rootdelay no-bluetooth no-audit ro ssh-keygen __cleanup__
 BUILD_OPTS ?=
 
@@ -45,10 +45,19 @@ export REPO_URL ?= https://de3.mirror.archlinuxarm.org
 PIKVM_REPO_URL ?= https://files.pikvm.org/repos/arch/
 PIKVM_REPO_KEY ?= 912C773ABBD1B584
 
-export QEMU_REPO_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
-QEMU_RM ?= 1
-
 CARD ?= /dev/mmcblk0
+
+
+# =====
+export __HOST_ARCH := $(subst v7l,,$(shell uname -m))
+ifneq ($(__HOST_ARCH),x86_64)
+ifneq ($(__HOST_ARCH),$(ARCH))
+$(error Cross-arch ARM building like $(__HOST_ARCH)<->$(ARCH) is not supported)
+endif
+endif
+
+__DEP_BINFMT := $(if $(call optbool,$(PASS_ENSURE_BINFMT)),,binfmt)
+__DEP_TOOLBOX := $(if $(call optbool,$(PASS_ENSURE_TOOLBOX)),,toolbox)
 
 
 # =====
@@ -71,33 +80,26 @@ endef
 
 define show_running_config
 $(call say,"Running configuration")
-@ echo "    PROJECT = $(PROJECT)"
-@ echo "    OS      = $(OS)"
-@ echo "    BOARD   = $(BOARD)"
-@ echo "    ARCH    = $(ARCH)"
-@ echo "    STAGES  = $(STAGES)"
+@ echo "    PROJECT    = $(PROJECT)"
+@ echo "    OS         = $(OS)"
+@ echo "    BOARD      = $(BOARD)"
+@ echo "    ARCH       = $(ARCH)"
+@ echo "    STAGES     = $(STAGES)"
 @ echo "    BUILD_OPTS = $(BUILD_OPTS)"
 @ echo
-@ echo "    HOSTNAME   = $(HOSTNAME)"
-@ echo "    LOCALE     = $(LOCALE)"
-@ echo "    TIMEZONE   = $(TIMEZONE)"
-@ echo "    REPO_URL   = $(REPO_URL)"
-@ echo "    PIKVM_REPO_URL   = $(PIKVM_REPO_URL)"
-@ echo "    PIKVM_REPO_KEY   = $(PIKVM_REPO_KEY)"
+@ echo "    HOSTNAME       = $(HOSTNAME)"
+@ echo "    LOCALE         = $(LOCALE)"
+@ echo "    TIMEZONE       = $(TIMEZONE)"
+@ echo "    REPO_URL       = $(REPO_URL)"
+@ echo "    PIKVM_REPO_URL = $(PIKVM_REPO_URL)"
+@ echo "    PIKVM_REPO_KEY = $(PIKVM_REPO_KEY)"
 @ echo
 @ echo "    CARD = $(CARD)"
-@ echo
-@ echo "    QEMU_RM = $(QEMU_RM)"
 endef
 
 define check_build
 $(if $(wildcard $(_BUILT_IMAGE_CONFIG)),,$(call die,"Not built yet"))
 endef
-
-
-# =====
-__DEP_BINFMT := $(if $(call optbool,$(PASS_ENSURE_BINFMT)),,binfmt)
-__DEP_TOOLBOX := $(if $(call optbool,$(PASS_ENSURE_TOOLBOX)),,toolbox)
 
 
 # =====
@@ -137,13 +139,19 @@ shell: override RUN_OPTS:="$(RUN_OPTS) -i"
 shell: run
 
 
-toolbox:
+toolbox: $(if $(filter-out x86_64,$(__HOST_ARCH)),,base)
 	$(call say,"Ensuring toolbox image")
+	$(MAKE) -C base arch-$(BOARD)-$(ARCH)
 	$(MAKE) -C toolbox toolbox
 	$(call say,"Toolbox image is ready")
 
 
-binfmt: $(__DEP_TOOLBOX)
+binfmt: _binfmt-host.$(__HOST_ARCH)
+_binfmt-host.arm:
+	@ true
+_binfmt-host.aarch64:
+	@ true
+_binfmt-host.x86_64: $(__DEP_TOOLBOX)
 	$(call say,"Ensuring $(ARCH) binfmt")
 	$(DOCKER_RUN_TTY) \
 			--privileged \
@@ -167,7 +175,6 @@ scan: $(__DEP_TOOLBOX)
 os: $(__DEP_BINFMT) _buildctx
 	$(call say,"Building OS")
 	$(eval _image = $(_IMAGES_PREFIX)-result)
-	rm -f $(_BUILT_IMAGE_CONFIG)
 	cd $(_BUILD_DIR) && $(DOCKER) build \
 			--rm \
 			--tag $(_image) \
@@ -189,22 +196,21 @@ os: $(__DEP_BINFMT) _buildctx
 	$(call say,"Build complete")
 
 
-_buildctx: _base_tgz _qemu
+_buildctx: base qemu
 	$(call say,"Assembling main Dockerfile")
-	$(eval _tgz = $(_IMAGES_PREFIX).base.tgz)
 	$(eval _init = $(_BUILD_DIR)/stages/__init__/Dockerfile.part)
-	rm -rf $(_BUILD_DIR)
+	rm -rf $(_BUILD_DIR) $(_BUILT_IMAGE_CONFIG)
 	mkdir -p $(_BUILD_DIR)
 	#
-	ln base/$(_OS_BOARD_ARCH).tgz $(_BUILD_DIR)/$(_tgz)
-	ln qemu/qemu-$(ARCH)-static* $(_BUILD_DIR)
-	chmod a-w $(_BUILD_DIR)/*  # For hardlinks only
+	ln base/$(_OS_BOARD_ARCH).tgz $(_BUILD_DIR)
+	test $(ARCH) == $(__HOST_ARCH) \
+		|| ln qemu/qemu-$(ARCH)-static* $(_BUILD_DIR)
 	#
 	cp -a stages/$(OS) $(_BUILD_DIR)/stages
-	sed -i \
-			-e 's|%BASE_ROOTFS_TGZ%|$(_tgz)|g' \
-			-e 's|%QEMU%|qemu-$(ARCH)-static|g' \
-		$(_init)
+	sed -i -e 's|%ADD_BASE_ROOTFS_TGZ%|ADD $(_OS_BOARD_ARCH).tgz /|g' $(_init)
+	test $(ARCH) != $(__HOST_ARCH) \
+		&& sed -i -e 's|%COPY_QEMU_USER_STATIC%|COPY qemu-$(ARCH)-static* /usr/bin/|g' $(_init) \
+		|| sed -i -e 's|%COPY_QEMU_USER_STATIC%||g' $(_init)
 	for var in BOARD ARCH LOCALE TIMEZONE REPO_URL PIKVM_REPO_URL PIKVM_REPO_KEY; do \
 		echo "ARG $$var" >> $(_init) \
 		&& echo "ENV $$var \$$$$var" >> $(_init) \
@@ -219,13 +225,18 @@ _buildctx: _base_tgz _qemu
 	$(call say,"Main Dockerfile is ready")
 
 
-_base_tgz:
+base:
 	$(call say,"Ensuring base rootfs")
 	$(MAKE) -C base $(_OS_BOARD_ARCH)
 	$(call say,"Base rootfs is ready")
 
 
-_qemu:
+qemu: _qemu-host.$(__HOST_ARCH)
+_qemu-host.arm:
+	@ true
+_qemu-host.aarch64:
+	@ true
+_qemu-host.x86_64:
 	$(call say,"Ensuring QEMU-$(ARCH)")
 	$(MAKE) -C qemu qemu-$(ARCH)
 	$(call say,"QEMU-$(ARCH) is ready")
@@ -263,7 +274,7 @@ extract: $(__DEP_TOOLBOX) _cachedir
 				--remove-root \
 				--root $(_RPI_RESULT_ROOTFS) \
 				--set-hostname "$(call read_built_config,HOSTNAME)" \
-				$(if $(call optbool,$(QEMU_RM)),--remove-qemu,) \
+				$(if $(filter-out x86_64,$(__HOST_ARCH)),,--remove-qemu) \
 			$(_RPI_RESULT_ROOTFS).tar
 	$(call say,"Extraction complete")
 
@@ -288,5 +299,5 @@ $(_CACHE_DIR)/CACHEDIR.TAG:
 
 
 # =====
-.PHONY: toolbox
-.NOTPARALLEL: clean-all install
+.PHONY: toolbox base qemu
+.NOTPARALLEL:

@@ -28,15 +28,24 @@ all:
 
 toolbox:
 	test -n "$(DOCKER)"
+	test -n "$(BOARD)"
+	test -n "$(ARCH)"
+	test -n "$(REPO_URL)"
 	test -n "$(_TOOLBOX_IMAGE)"
+	test -n "$(__HOST_ARCH)"
+	rm -f *.tgz Dockerfile
+	ln ../base/arch-$(BOARD)-$(ARCH).tgz .
+	sed -i -e 's|%BASE_ROOTFS_TGZ%|arch-$(BOARD)-$(ARCH)|g' Dockerfile.$(__HOST_ARCH) > Dockerfile
+	cat Dockerfile.common >> Dockerfile
 	$(DOCKER) build \
 			--rm \
 			--tag $(_TOOLBOX_IMAGE) \
+			--build-arg "REPO_URL=$(REPO_URL)" \
 			$(if $(call optbool,$(NC)),--no-cache,) \
 		.
 
 
 clean:
-	@true
+	rm -f *.tgz Dockerfile
 clean-all: clean
-	@true
+	@ true

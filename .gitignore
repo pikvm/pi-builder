@@ -1,3 +1,5 @@
+/toolbox/*.tgz
+/toolbox/Dockerfile
 /qemu/.pkg.*/
 /base/*.tgz*
 /.cache/

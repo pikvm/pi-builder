@@ -40,6 +40,6 @@ $(_ARM) $(_AARCH64):
 
 
 clean:
-	@true
+	@ true
 clean-all: clean
 	rm -f *.tgz *.tgz.tmp

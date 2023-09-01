@@ -21,9 +21,12 @@
 # ========================================================================== #
 
 
+QEMU_REPO_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
+
+
 # =====
 all:
-	all
+	true
 
 
 qemu-arm: qemu-arm-static qemu-arm-static-orig
@@ -65,9 +68,9 @@ qemu-arm-static-orig qemu-aarch64-static-orig:
 
 
 clean:
-	@true
+	@ true
 clean-all:
 	rm -rf .pkg.* qemu-*-static{,-orig}
 
 
-.PHONY: all qemu-wrapper qemu-orig clean clean-all
+.PHONY: all clean clean-all
