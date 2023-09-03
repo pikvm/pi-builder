@@ -23,18 +23,17 @@
 
 # =====
 all:
-	true
+	exit 1
 
 
-toolbox:
+toolbox: clean-all
 	test -n "$(DOCKER)"
 	test -n "$(BOARD)"
 	test -n "$(ARCH)"
 	test -n "$(REPO_URL)"
 	test -n "$(_TOOLBOX_IMAGE)"
 	test -n "$(__HOST_ARCH)"
-	rm -f *.tgz Dockerfile
-	ln ../base/arch-$(BOARD)-$(ARCH).tgz .
+	test $(ARCH) != $(__HOST_ARCH) || ln ../base/arch-$(BOARD)-$(ARCH).tgz .
 	sed -i -e 's|%BASE_ROOTFS_TGZ%|arch-$(BOARD)-$(ARCH)|g' Dockerfile.$(__HOST_ARCH) > Dockerfile
 	cat Dockerfile.common >> Dockerfile
 	$(DOCKER) build \
@@ -45,7 +44,5 @@ toolbox:
 		.
 
 
-clean:
+clean-all:
 	rm -f *.tgz Dockerfile
-clean-all: clean
-	@ true

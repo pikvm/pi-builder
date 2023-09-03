@@ -28,7 +28,7 @@ RUN pacman --noconfirm --ask=4 -Syy \
 	&& rm -rf /var/cache/pacman/pkg/*
 
 RUN mkdir /tools
-COPY install-binfmt /tools/
+COPY binfmt /tools/
 COPY docker-extract /tools/
 COPY disk /tools/
-COPY card-install /tools/
+COPY install /tools/

@@ -23,7 +23,7 @@
 
 # =====
 all:
-	true
+	exit 1
 
 
 _ARM = arch-rpi2-arm arch-rpi3-arm arch-rpi4-arm arch-zero2w-arm
@@ -39,7 +39,5 @@ $(_ARM) $(_AARCH64):
 	; fi
 
 
-clean:
-	@ true
-clean-all: clean
+clean-all:
 	rm -f *.tgz *.tgz.tmp

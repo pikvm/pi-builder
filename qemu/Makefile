@@ -26,7 +26,7 @@ QEMU_REPO_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
 
 # =====
 all:
-	true
+	exit 1
 
 
 qemu-arm: qemu-arm-static qemu-arm-static-orig
@@ -38,7 +38,7 @@ qemu-arm-static qemu-aarch64-static:
 	gcc \
 			-static \
 			-DQEMU_GUEST_ARCH=\"$(_guest_arch)\" \
-			$(if $(filter-out aarch64,$(_guest_arch)),-m32,-m64) \
+			$(if $(filter aarch64,$(_guest_arch)),-m64,-m32) \
 			qemu-wrapper.c \
 		-o qemu-$(_guest_arch)-static
 
@@ -55,7 +55,7 @@ qemu-arm-static-orig qemu-aarch64-static-orig:
 	mkdir -p $(_pkg)
 	curl -L -f $(QEMU_REPO_URL)/`curl -s -S -L -f $(QEMU_REPO_URL)/ \
 			| grep qemu-user-static \
-			| grep _$(if $(filter-out aarch64,$(_guest_arch)),i386,amd64).deb \
+			| grep _$(if $(filter aarch64,$(_guest_arch)),amd64,i386).deb \
 			| sort -n \
 			| tail -n 1 \
 			| sed -n 's/.*href="\([^"]*\).*/\1/p'` \
@@ -67,10 +67,5 @@ qemu-arm-static-orig qemu-aarch64-static-orig:
 	rm -rf $(_pkg)
 
 
-clean:
-	@ true
 clean-all:
-	rm -rf .pkg.* qemu-*-static{,-orig}
-
-
-.PHONY: all clean clean-all
+	rm -rf .pkg.*

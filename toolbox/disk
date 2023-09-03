@@ -68,9 +68,12 @@ def _make_partition(path: str, npart: int) -> str:
 
 def _run_commands(cmds: list[list[str]]) -> None:
     for cmd in cmds:
-        print("==>", " ".join(cmd))
+        print(f"CMD [ {sys.argv[0]} ] ==>", " ".join(cmd))
         sys.stdout.flush()
-        subprocess.run(cmd, check=True)
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError:
+            raise SystemExit(1)
 
 
 def _format_disk(device_path: str) -> None:

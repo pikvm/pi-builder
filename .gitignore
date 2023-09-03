@@ -5,3 +5,6 @@
 /.cache/
 /.build/
 /.built.conf
+/*.img
+/*.img.xz
+/*.img.xz.sha1
