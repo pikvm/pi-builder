@@ -1,8 +1,3 @@
-FROM archlinux/archlinux:base
-
-RUN mkdir -p /etc/pacman.d/hooks \
-	&& ln -s /dev/null /etc/pacman.d/hooks/30-systemd-tmpfiles.hook
-
 RUN pacman --noconfirm --ask=4 -Syy \
 	&& pacman --needed --noconfirm --ask=4 -S \
 		glibc \
