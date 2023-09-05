@@ -27,6 +27,8 @@ import re
 import subprocess
 import dataclasses
 
+import dask
+
 
 # =====
 @dataclasses.dataclass(frozen=True)
@@ -36,6 +38,8 @@ class _Mkfs:
     label: str
     reserved: str
     mount: str
+    begin: int
+    end: int
 
 
 def _parse_script(script: str) -> tuple[list[list[str]], list[_Mkfs]]:
@@ -47,7 +51,7 @@ def _parse_script(script: str) -> tuple[list[list[str]], list[_Mkfs]]:
         (left, right) = (line.split("#", 1) + [""])[:2]  # type: ignore
         left = left.split()  # type: ignore
         if "mkpart" in left and ("primary" in left or "logical" in left):
-            assert len(left) >= 3, f"Too short mkpart command: {left}"
+            assert len(left) >= 5, f"Too short mkpart command: {left}"
             params = dict(re.findall(r"(\w+)=([^\s]+)", right))
             filesystems.append(_Mkfs(
                 npart=npart,
@@ -55,6 +59,8 @@ def _parse_script(script: str) -> tuple[list[list[str]], list[_Mkfs]]:
                 label=params.get("label", ""),
                 reserved=params.get("reserved", ""),
                 mount=params.get("mount", ""),
+                begin=dask.utils.parse_bytes(left[3]),
+                end=(0 if left[4] == "100%" else dask.utils.parse_bytes(left[4])),
             ))
             npart += 1
         parted.append(left)
@@ -128,26 +134,43 @@ def _mount_disk(device_path: str, prefix_path: str, mount: bool) -> None:
     _run_commands(cmds)
 
 
+def _print_size() -> None:
+    (_, filesystems) = _parse_script(sys.stdin.read())
+    size = 0
+    for mkfs in filesystems:
+        if mkfs.end > 0:
+            size = mkfs.end
+        else:
+            size = mkfs.begin
+    size += 2048 * 1024 * 1024  # + 2Gb
+    size -= size % 4096  # Align
+    print(size)
+
+
 # =====
 def main() -> None:
-    if len(sys.argv) <= 2:
-        raise SystemExit(f"Usage: {sys.argv[0]} <format|mount|umount> ...")
+    if len(sys.argv) < 2:
+        raise SystemExit(f"Usage: {sys.argv[0]} <format|mkfs|mount|umount|print-size> ...")
     if sys.argv[1] == "format":
         if len(sys.argv) != 3:
-            raise SystemExit(f"Usage: cat script | {sys.argv[0]} format /dev/path")
+            raise SystemExit(f"Usage: cat disk.conf | {sys.argv[0]} format /dev/path")
         _format_disk(sys.argv[2])
     elif sys.argv[1] == "mkfs":
         if len(sys.argv) != 3:
-            raise SystemExit(f"Usage: cat script | {sys.argv[0]} format /dev/path")
+            raise SystemExit(f"Usage: cat disk.conf | {sys.argv[0]} mkfs /dev/path")
         _mkfs_disk(sys.argv[2])
     elif sys.argv[1] == "mount":
         if len(sys.argv) != 4:
-            raise SystemExit(f"Usage: {sys.argv[0]} mount /dev/path /prefix/path")
+            raise SystemExit(f"Usage: cat disk.conf | {sys.argv[0]} mount /dev/path /prefix/path")
         _mount_disk(sys.argv[2], sys.argv[3], True)
     elif sys.argv[1] == "umount":
         if len(sys.argv) != 3:
-            raise SystemExit(f"Usage: {sys.argv[0]} umount /dev/path")
+            raise SystemExit(f"Usage: cat disk.conf | {sys.argv[0]} umount /dev/path")
         _mount_disk(sys.argv[2], "/dev/null", False)
+    elif sys.argv[1] == "print-size":
+        if len(sys.argv) != 2:
+            raise SystemExit(f"Usage: cat disk.conf | {sys.argv[0]} print-size")
+        _print_size()
     else:
         raise SystemExit(f"Usage: {sys.argv[0]} <format|mount|umount> ...")
 

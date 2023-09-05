@@ -17,9 +17,11 @@ RUN pacman --noconfirm --ask=4 -Syy \
 	&& pacman --needed --noconfirm --ask=4 -S \
 		arp-scan \
 		python \
+		python-dask \
 		parted \
 		dosfstools \
 		rsync \
+		xz \
 	&& rm -rf /var/cache/pacman/pkg/*
 
 RUN mkdir /tools

@@ -64,11 +64,8 @@ def _install_card(rootfs_path: str, dev_path: str, disk_conf: str) -> None:
 
 
 def _install_image(devfs_prefix: str, rootfs_path: str, image_path: str, compress: bool, disk_conf: str) -> None:
-    size = int(_run(["du", "-Pbs", rootfs_path], read=True).split()[0])
-    size += 4096 * 1024 * 1024
-    size -= size % 4096
-    assert size % 4096 == 0
-    _run(["truncate", "-s", str(size), image_path])
+    size_str = _run(["/tools/disk", "print-size"], input=disk_conf, read=True)
+    _run(["truncate", "-s", size_str, image_path])
 
     loop_path = devfs_prefix + "/" + _run(["losetup", "-f"], read=True)
     if not os.path.exists(loop_path):
