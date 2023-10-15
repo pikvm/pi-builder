@@ -9,5 +9,6 @@ RUN ( \
 	) \
 	&& pacman-key --lsign-key $PIKVM_REPO_KEY \
 	&& echo -e "\n[pikvm]" >> /etc/pacman.conf \
-	&& echo "Server = $PIKVM_REPO_URL/$BOARD-$ARCH" >> /etc/pacman.conf \
-	&& echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf
+	&& echo "Include = /etc/pacman.d/pikvm" >> /etc/pacman.conf \
+	&& echo "SigLevel = Required DatabaseOptional" >> /etc/pacman.conf \
+	&& echo "Server = $PIKVM_REPO_URL/$BOARD-$ARCH" > /etc/pacman.d/pikvm
