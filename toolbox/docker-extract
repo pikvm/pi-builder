@@ -122,7 +122,10 @@ class _TarFile(tarfile.TarFile):
 
     def __remove(self, targetpath: str) -> None:
         if os.path.lexists(targetpath):
-            os.unlink(targetpath)
+            if os.path.isdir(targetpath) and not os.path.islink(targetpath):
+                shutil.rmtree(targetpath)
+            else:
+                os.unlink(targetpath)
 
 
 # =====
