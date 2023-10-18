@@ -80,11 +80,12 @@ def _install_image(devfs_prefix: str, rootfs_path: str, image_path: str, compres
     if compress:
         _run(["xz", f"-T{os.cpu_count()}", "-v", "--compress", image_path])
         image_path += ".xz"
-        sha1 = _run(["sha1sum", image_path], read=True).split()[0]
-        sha1_path = image_path + ".sha1"
-        with open(sha1_path, "w") as file:
-            file.write(sha1)
-        shutil.copystat(image_path, sha1_path)
+
+    sha1 = _run(["sha1sum", image_path], read=True).split()[0]
+    sha1_path = image_path + ".sha1"
+    with open(sha1_path, "w") as file:
+        file.write(sha1)
+    shutil.copystat(image_path, sha1_path)
 
 
 # =====
