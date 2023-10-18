@@ -325,7 +325,7 @@ image: $(__DEP_TOOLBOX) extract
 				--image=$(_RESULT_IMAGE)
 	$(eval _suffix = $(if $(call optbool,$(IMAGE_XZ)),.xz,))
 	mv $(_RESULT_IMAGE)$(_suffix) $(IMAGE)$(_suffix)
-	test ! -f $(_RESULT_IMAGE).xz.sha1 || mv $(_RESULT_IMAGE).xz.sha1 $(IMAGE).xz.sha1
+	test ! -f $(_RESULT_IMAGE)$(_suffix).sha1 || mv $(_RESULT_IMAGE)$(_suffix).sha1 $(IMAGE)$(_suffix).sha1
 	$(call say,"Image complete")
 
 
