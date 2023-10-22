@@ -59,6 +59,7 @@ RUN pacman --noconfirm --ask=4 -Syy \
 		ccache \
 		screen \
 		dosfstools \
+		raspberrypi-utils \
 	&& case "$ARCH" in \
 		arm) \
 			case "$BOARD" in \

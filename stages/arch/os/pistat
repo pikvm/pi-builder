@@ -21,10 +21,10 @@ echo "${color_comment}# $(tr -d '\0' < /proc/device-tree/model)${color_reset}"
 
 echo
 echo "CPU temp: ${color_value}$(echo "scale=2; $(</sys/class/thermal/thermal_zone0/temp) / 1000" | bc -l)'C${color_reset}"
-gpu_temp=$(/opt/vc/bin/vcgencmd measure_temp)
+gpu_temp=$(/usr/bin/vcgencmd measure_temp)
 echo "GPU temp: ${color_value}${gpu_temp#*=}${color_reset}"
 
-flags=$(/opt/vc/bin/vcgencmd get_throttled)
+flags=$(/usr/bin/vcgencmd get_throttled)
 flags="${flags#*=}"
 echo
 echo "Throttled flags: ${color_value}${flags}${color_reset}"
