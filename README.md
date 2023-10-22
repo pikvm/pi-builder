@@ -78,7 +78,7 @@ You can create your own stages and add them to the build alongside stock ones. T
 -----
 # Stock stages
 * `__init__` - the main stage that creates the base image based on root FS Arch Linux ARM. It should ALWAYS come first in the `STAGES` list. 
-* `os` - installs some packages and sets the system up a bit to make it more comfortable. You can [check what's inside](https://github.com/pikvm/pi-builder/tree/master/stages/os).
+* `os` - installs some packages and sets the system up a bit to make it more comfortable. You can [check what's inside](https://github.com/pikvm/pi-builder/tree/master/stages/arch/os).
 * `ro` - makes the system a read-only OS. When run like this, you can simply unplug Raspberry Pi without shutting it down properly, without the risk of corrupting the file system. To temporary make the system writable (eg., to install updates), use the `rw` command. After applying all changes, run `ro` again to remount the system as read-only.
 * `pikvm-repo` - adds the key and the [Pi-KVM](https://pikvm.org/repos) repo. It's needed for the watchdog, but it has other useful packages too. You can skip this stage.
 * `watchdog` - sets up the hardware watchdog.
