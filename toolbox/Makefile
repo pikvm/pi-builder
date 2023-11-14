@@ -30,7 +30,7 @@ toolbox: clean-all
 	test -n "$(DOCKER)"
 	test -n "$(BOARD)"
 	test -n "$(ARCH)"
-	test -n "$(REPO_URL)"
+	test -n "$(ARCH_DIST_REPO_URL)"
 	test -n "$(_TOOLBOX_IMAGE)"
 	test -n "$(__HOST_ARCH)"
 	test $(ARCH) != $(__HOST_ARCH) || ln ../base/arch-$(BOARD)-$(ARCH).tgz .
@@ -39,7 +39,7 @@ toolbox: clean-all
 	$(DOCKER) build \
 			--rm \
 			--tag $(_TOOLBOX_IMAGE) \
-			--build-arg "REPO_URL=$(REPO_URL)" \
+			--build-arg "ARCH_DIST_REPO_URL=$(ARCH_DIST_REPO_URL)" \
 			$(if $(call optbool,$(NC)),--no-cache,) \
 		.
 

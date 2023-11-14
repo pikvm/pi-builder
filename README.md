@@ -129,7 +129,6 @@ $ make
     HOSTNAME   = pi
     LOCALE     = en_US
     TIMEZONE   = Europe/Moscow
-    REPO_URL   = http://mirror.yandex.ru/archlinux-arm
 
     CARD = /dev/mmcblk0
 

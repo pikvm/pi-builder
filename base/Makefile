@@ -32,9 +32,9 @@ $(_ARM): _SUFFIX=rpi-armv7
 $(_AARCH64): _SUFFIX=rpi-aarch64
 $(_ARM) $(_AARCH64):
 	test -n "$(_SUFFIX)"
-	test -n "$(REPO_URL)"
+	test -n "$(ARCH_DIST_REPO_URL)"
 	if [ ! -e $@.tgz ]; then \
-		curl -L -f $(REPO_URL)/os/ArchLinuxARM-$(_SUFFIX)-latest.tar.gz -o $@.tgz.tmp \
+		curl -L -f $(ARCH_DIST_REPO_URL)/os/ArchLinuxARM-$(_SUFFIX)-latest.tar.gz -o $@.tgz.tmp \
 		&& mv $@.tgz.tmp $@.tgz \
 	; fi
 

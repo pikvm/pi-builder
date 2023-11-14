@@ -6,9 +6,9 @@ RUN mkdir -p /etc/pacman.d/hooks \
 
 RUN sed -i -e "s|^HOOKS=.*|HOOKS=(base udev block filesystems)|g" /etc/mkinitcpio.conf
 
-ARG REPO_URL
-ENV REPO_URL $REPO_URL
-RUN echo "Server = $REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
+ARG ARCH_DIST_REPO_URL
+ENV ARCH_DIST_REPO_URL $ARCH_DIST_REPO_URL
+RUN echo "Server = $ARCH_DIST_REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 	&& pacman-key --init \
 	&& pacman-key --populate archlinuxarm
 
