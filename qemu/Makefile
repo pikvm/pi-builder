@@ -21,7 +21,7 @@
 # ========================================================================== #
 
 
-QEMU_REPO_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
+include ../lib.mk
 
 
 # =====
@@ -38,24 +38,24 @@ qemu-arm-static qemu-aarch64-static:
 	gcc \
 			-static \
 			-DQEMU_GUEST_ARCH=\"$(_guest_arch)\" \
-			$(if $(filter aarch64,$(_guest_arch)),-m64,-m32) \
+			$(call contains,aarch64,$(_guest_arch),-m64,-m32) \
 			qemu-wrapper.c \
 		-o qemu-$(_guest_arch)-static
 
 
 qemu-arm-static-orig qemu-aarch64-static-orig:
+	$(call not_empty,QEMU_REPO_URL)
 	$(eval _guest_arch = $(subst -static-orig,,$(subst qemu-,,$@)))
 	$(eval _pkg = ./.pkg.$(_guest_arch))
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
 	#   - https://lkml.org/lkml/2018/12/27/155
 	#   - https://stackoverflow.com/questions/27554325/readdir-32-64-compatibility-issues
-	test -n "$(QEMU_REPO_URL)"
 	rm -rf $(_pkg)
 	mkdir -p $(_pkg)
 	curl -L -f $(QEMU_REPO_URL)/`curl -s -S -L -f $(QEMU_REPO_URL)/ \
 			| grep qemu-user-static \
-			| grep _$(if $(filter aarch64,$(_guest_arch)),amd64,i386).deb \
+			| grep _$(call contains,aarch64,$(_guest_arch),amd64,i386).deb \
 			| sort -n \
 			| tail -n 1 \
 			| sed -n 's/.*href="\([^"]*\).*/\1/p'` \

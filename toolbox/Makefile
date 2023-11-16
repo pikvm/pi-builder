@@ -21,18 +21,21 @@
 # ========================================================================== #
 
 
+include ../lib.mk
+
+
 # =====
 all:
 	exit 1
 
 
 toolbox: clean-all
-	test -n "$(DOCKER)"
-	test -n "$(BOARD)"
-	test -n "$(ARCH)"
-	test -n "$(ARCH_DIST_REPO_URL)"
-	test -n "$(_TOOLBOX_IMAGE)"
-	test -n "$(__HOST_ARCH)"
+	$(call not_empty,DOCKER)
+	$(call not_empty,BOARD)
+	$(call not_empty,ARCH)
+	$(call not_empty,ARCH_DIST_REPO_URL)
+	$(call not_empty,_TOOLBOX_IMAGE)
+	$(call not_empty,__HOST_ARCH)
 	test $(ARCH) != $(__HOST_ARCH) || ln ../base/arch-$(BOARD)-$(ARCH).tgz .
 	sed -e 's|%BASE_ROOTFS_TGZ%|arch-$(BOARD)-$(ARCH).tgz|g' Dockerfile.$(__HOST_ARCH) > Dockerfile
 	cat Dockerfile.common >> Dockerfile

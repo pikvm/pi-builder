@@ -21,23 +21,73 @@
 # ========================================================================== #
 
 
+include ../lib.mk
+
+
 # =====
 all:
 	exit 1
 
 
-_ARM = arch-rpi2-arm arch-rpi3-arm arch-rpi4-arm arch-zero2w-arm
-_AARCH64 = arch-rpi3-aarch64 arch-rpi4-aarch64
-$(_ARM): _SUFFIX=rpi-armv7
-$(_AARCH64): _SUFFIX=rpi-aarch64
-$(_ARM) $(_AARCH64):
-	test -n "$(_SUFFIX)"
-	test -n "$(ARCH_DIST_REPO_URL)"
-	if [ ! -e $@.tgz ]; then \
-		curl -L -f $(ARCH_DIST_REPO_URL)/os/ArchLinuxARM-$(_SUFFIX)-latest.tar.gz -o $@.tgz.tmp \
-		&& mv $@.tgz.tmp $@.tgz \
-	; fi
+# =====
+_ARCH_LIST := \
+	$(call append,arch-,-arm,rpi2 rpi3 rpi4 zero2w) \
+	$(call append,arch-,-aarch64,rpi3 rpi4)
 
 
+$(call append,,.tgz,$(_ARCH_LIST)):
+	$(call notempty,ARCH_DIST_REPO_URL)
+	curl -L -f $(ARCH_DIST_REPO_URL)/os/ArchLinuxARM-$(_SUFFIX)-latest.tar.gz -o $@.tmp
+	mv $@.tmp $@
+
+
+# =====
+_RPIOS_LIST := \
+	$(call append,rpios-,-arm,rpi rpi2 rpi3 rpi4 rpi5 zerow zero2w) \
+	$(call append,rpios-,-aarch64,rpi3 rpi4 rpi5)
+
+
+$(call append,,.tgz,$(_RPIOS_LIST)):
+	$(eval _base = $(subst .tgz,,$@))
+	$(MAKE) $(_base).img
+	mkdir $(_base).mnt
+	#
+	set -Eeuo pipefail \
+		&& loop=`$(SUDO) losetup -P -f --show $(_base).img` \
+		&& $(SUDO) mount $${loop}p2 $(_base).mnt \
+		&& $(SUDO) mount $${loop}p1 $(_base).mnt/boot \
+		&& $(SUDO) tar -czf $@.tmp -C $(_base).mnt . \
+		&& $(SUDO) chown `id -u`:`id -g` $@.tmp \
+		&& $(SUDO) mv $@.tmp $@ \
+		&& $(SUDO) umount $(_base).mnt/boot \
+		&& $(SUDO) umount $(_base).mnt \
+		&& $(SUDO) losetup -d $$loop
+	#
+	rmdir $(_base).mnt
+
+
+$(call append,,.img,$(_RPIOS_LIST)):
+	$(call notempty,RPIOS_IMAGES_URL)
+	$(eval _arch = $(call contains,-arm,$@,armhf,arm64))
+	rm -f $@.xz.tmp $@.tmp
+	set -Eeuo pipefail \
+		&& url=$(RPIOS_IMAGES_URL)/raspios_lite_$(_arch)/images \
+		&& url=$$url/raspios_lite_$(_arch)-`curl -s -S -L -f $$url \
+			| grep raspios_lite_$(_arch)-2 \
+			| sort -n \
+			| tail -n 1 \
+			| sed -n 's/.*href="raspios_lite_$(_arch)-\([^\/]*\).*/\1/p'` \
+		&& url=$$url/`curl -s -S -L -f $$url \
+			| grep '$(_arch)-lite.img.xz"' \
+			| sed -n 's/.*href="\([^\"]*\).*/\1/p'` \
+		&& echo "Downloading: $$url" \
+		&& curl -L -f $$url -o $@.xz.tmp
+	#
+	xzcat $@.xz.tmp > $@.tmp
+	rm -f $@.xz.tmp
+	mv $@.tmp $@
+
+
+# =====
 clean-all:
-	rm -f *.tgz *.tgz.tmp
+	rm -f *.tgz *.tmp *.img *.xz

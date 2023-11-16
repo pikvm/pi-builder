@@ -43,6 +43,21 @@ define die
 endef
 
 
+define notempty
+$(eval $(if $($(1)),,$(error $(1) is empty)))
+endef
+
+
+define append
+$(foreach _item,$(3),$(1)$(_item)$(2))
+endef
+
+
+define contains
+$(if $(filter $(1),$(2)),$(3),$(4))
+endef
+
+
 define cachetag
 test -n "$1"
 echo "Signature: 8a477f597d28d172789f06886806bc55" > "$1/CACHEDIR.TAG"
