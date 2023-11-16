@@ -37,7 +37,8 @@ _ARCH_LIST := \
 
 $(call append,,.tgz,$(_ARCH_LIST)):
 	$(call notempty,ARCH_DIST_REPO_URL)
-	curl -L -f $(ARCH_DIST_REPO_URL)/os/ArchLinuxARM-$(_SUFFIX)-latest.tar.gz -o $@.tmp
+	$(eval _arch = $(call contains,-arm,$@,armv7,aarch64))
+	curl -L -f $(ARCH_DIST_REPO_URL)/os/ArchLinuxARM-rpi-$(_arch)-latest.tar.gz -o $@.tmp
 	mv $@.tmp $@
 
 
