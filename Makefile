@@ -207,7 +207,7 @@ _buildctx: | clean base qemu
 	#
 	mkdir -p $(_BUILD_DIR)
 	ln base/$(_OS_BOARD_ARCH).tgz $(_BUILD_DIR)
-	test $(ARCH) == $(__HOST_ARCH) \
+	test $(ARCH) = $(__HOST_ARCH) \
 		|| ln qemu/qemu-$(ARCH)-static* $(_BUILD_DIR)
 	#
 	cp -a stages/$(OS) $(_BUILD_DIR)/stages
