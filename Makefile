@@ -51,6 +51,7 @@ export RPIOS_IMAGES_URL ?= https://downloads.raspberrypi.com
 
 export QEMU_REPO_URL ?= https://ftp.debian.org/debian/pool/main/q/qemu
 
+DISK ?= ./disk/$(OS).conf
 CARD ?= /dev/mmcblk0
 IMAGE ?= ./$(PROJECT).$(OS)-$(BOARD)-$(ARCH).img
 IMAGE_XZ ?=
@@ -301,7 +302,7 @@ extract: $(__DEP_TOOLBOX)
 install: $(__DEP_TOOLBOX) extract
 	$(call check_build)
 	$(call say,"Installing to $(CARD)")
-	cat disk.conf | $(DOCKER_RUN_INT) \
+	cat $(DISK) | $(DOCKER_RUN_INT) \
 			--privileged \
 			$(_CACHE_VOLUME_OPTS) \
 		$(_TOOLBOX_IMAGE) \
@@ -317,7 +318,7 @@ image: $(__DEP_TOOLBOX) extract
 	$(call say,"Creating image $(IMAGE)")
 	$(call remove_image)
 	touch $(_RESULT_IMAGE)
-	cat disk.conf | $(DOCKER_RUN_INT) \
+	cat $(DISK) | $(DOCKER_RUN_INT) \
 			--volume=/dev:/root/dev \
 			--privileged \
 			$(_CACHE_VOLUME_OPTS) \

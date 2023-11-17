@@ -56,11 +56,11 @@ $(call append,,.tgz,$(_RPIOS_LIST)):
 	set -Eeuo pipefail \
 		&& loop=`$(SUDO) losetup -P -f --show $(_base).img` \
 		&& $(SUDO) mount $${loop}p2 $(_base).mnt \
-		&& $(SUDO) mount $${loop}p1 $(_base).mnt/boot \
+		&& $(SUDO) mount $${loop}p1 $(_base).mnt/boot/firmware \
 		&& $(SUDO) tar -czf $@.tmp -C $(_base).mnt . \
 		&& $(SUDO) chown `id -u`:`id -g` $@.tmp \
 		&& $(SUDO) mv $@.tmp $@ \
-		&& $(SUDO) umount $(_base).mnt/boot \
+		&& $(SUDO) umount $(_base).mnt/boot/firmware \
 		&& $(SUDO) umount $(_base).mnt \
 		&& $(SUDO) losetup -d $$loop
 	#
