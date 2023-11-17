@@ -8,6 +8,7 @@
 /.build/
 /.built.conf
 /*.img
+/*.img.sha1
 /*.img.xz
 /*.img.xz.sha1
 /config.mk

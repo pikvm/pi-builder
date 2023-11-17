@@ -85,7 +85,7 @@ def _install_image(devfs_prefix: str, rootfs_path: str, image_path: str, compres
     sha1_path = image_path + ".sha1"
     with open(sha1_path, "w") as file:
         file.write(sha1)
-    shutil.copystat(image_path, sha1_path)
+    shutil.copymode(image_path, sha1_path)
 
 
 # =====
