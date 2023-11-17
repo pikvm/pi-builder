@@ -30,10 +30,10 @@ all:
 
 
 qemu-arm: qemu-arm-static qemu-arm-static-orig
-qemu-aarch64: qemu-aarch64-static qemu-aarch64-static-orig
+qemu-aarch64: qemu-aarch64-static
 
 
-qemu-arm-static qemu-aarch64-static:
+qemu-arm-static:
 	$(eval _guest_arch = $(subst -static,,$(subst qemu-,,$@)))
 	gcc \
 			-static \
@@ -43,9 +43,9 @@ qemu-arm-static qemu-aarch64-static:
 		-o qemu-$(_guest_arch)-static
 
 
-qemu-arm-static-orig qemu-aarch64-static-orig:
+qemu-arm-static-orig qemu-aarch64-static:
 	$(call not_empty,QEMU_REPO_URL)
-	$(eval _guest_arch = $(subst -static-orig,,$(subst qemu-,,$@)))
+	$(eval _guest_arch = $(call contains,aarch64,$@,aarch64,arm))
 	$(eval _pkg = ./.pkg.$(_guest_arch))
 	# Using i386 QEMU because of this:
 	#   - https://bugs.launchpad.net/qemu/+bug/1805913
@@ -63,7 +63,7 @@ qemu-arm-static-orig qemu-aarch64-static-orig:
 	cd $(_pkg) \
 		&& ar vx qemu-user-static.deb \
 		&& tar -xJf data.tar.xz
-	cp $(_pkg)/usr/bin/qemu-$(_guest_arch)-static qemu-$(_guest_arch)-static-orig
+	cp $(_pkg)/usr/bin/qemu-$(_guest_arch)-static $@
 	rm -rf $(_pkg)
 
 
