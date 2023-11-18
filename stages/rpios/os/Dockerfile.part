@@ -12,8 +12,40 @@ COPY stages/os/fstab /etc/
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update \
+# remove network-manager with raspberrypi-sys-mods ant raspi-config
+#RUN systemctl disable \
+#		triggerhappy \
+#		pigpiod \
+#		userconfig \
+#		avahi-daemon \
+#		bluetooth \
+#		bluez-firmware \
+#		ModemManager \
+#		NetworkManager \
+#		networking \
+#		raspberrypi-net-mods \
+RUN apt autoremove -y --purge \
+		triggerhappy \
+		libgpiod2 \
+		python3-lgpio \
+		python3-pigpio \
+		python3-gpiozero \
+		python3-rpi.gpio \
+		rpi.gpio-common \
+		pigpio \
+		flashrom \
+		userconf-pi \
+		avahi-daemon \
+		bluez \
+		mkvtoolnix \
+		modemmanager \
+		ifupdown \
+		libraspberrypi-dev \
+		libraspberrypi-doc \
+		raspberrypi-net-mods \
+	&& apt-get update \
 	&& apt install -y \
+		systemd-resolved \
 		vim \
 		colordiff \
 		tree \
@@ -36,3 +68,10 @@ RUN apt-get update \
 		dosfstools \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
+
+ADD stages/os/eth0.network /etc/systemd/network/eth0.network
+RUN systemctl enable \
+		systemd-resolved \
+		systemd-networkd
+
+COPY stages/os/e2fsck.conf /etc/
