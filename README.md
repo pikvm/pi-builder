@@ -1,5 +1,4 @@
 # pi-builder
-[[Русская версия]](README.ru.md)
 
 pi-builder is an easy-to-use and extendable tool to build [Arch Linux ARM](https://archlinuxarm.org) for Raspberry Pi using [Docker](https://www.docker.com).
 
@@ -28,7 +27,7 @@ Arch Linux ARM (and other systems as well) comes in form of a [minimal root file
 
 The Linux kernel, however, has a special way to run binaries on a different architecture. You can configure [binfmt_misc](https://en.wikipedia.org/wiki/Binfmt_misc) to run ARM binaries using an emulator (in this case, `qemu-arm-static` for `x86_64` ). Pi-builder has a [small script](https://github.com/pikvm/pi-builder/blob/master/toolbox/install-binfmt) that sets up binfmt_misc on the host system to run ARM files.
 
-In pi-builder, OS building is separated into **_stages_**, each of them being a different element of OS configuration. For example, the [ro](https://github.com/pikvm/pi-builder/tree/master/stages/ro) stage includes `Dockerfile.part` with all the necessary instructions and configs to create a read-only root. A [watchdog](https://github.com/pikvm/pi-builder/tree/master/stages/watchdog) stage has everything needed to set up a watchdog with optimal parameters on Raspberry Pi.
+In pi-builder, OS building is separated into **_stages_**, each of them being a different element of OS configuration. For example, the [ro](https://github.com/pikvm/pi-builder/tree/master/stages/arch/ro) stage includes `Dockerfile.part` with all the necessary instructions and configs to create a read-only root. A [watchdog](https://github.com/pikvm/pi-builder/tree/master/stages/arch/watchdog) stage has everything needed to set up a watchdog with optimal parameters on Raspberry Pi.
 
 A full list of stages that come with pi-builder can be found [here](https://github.com/pikvm/pi-builder/tree/master/stages) or below. You can choose the stages you need to set up your system and include them in your config. Stages are basically pieces of docker file that are combined in a specific order and executed during the build. You can also create your own stages by analogy.
 
@@ -136,7 +135,7 @@ $ make
 ```
 
 * **Important**: Make sure the SD card directory is in the `CARD` variable in the Makefile and automount is turned off, or else the newly formatted SD card will be mounted to your system and the setup script will fail.
-* **Very important**: Make sure your SSH key is in the [stages/ssh-root/pubkeys](https://github.com/pikvm/pi-builder/tree/master/stages/ssh-root/pubkeys) directory, or else you won't be able to log in to your system. Alternatively, don't use the `ssh-root` stage.
+* **Very important**: Make sure your SSH key is in the [stages/arch/ssh-root/pubkeys](https://github.com/pikvm/pi-builder/tree/master/stages/arch/ssh-root/pubkeys) directory, or else you won't be able to log in to your system. Alternatively, don't use the `ssh-root` stage.
 * **Most important**: Make sure to read the whole README to understand what you're doing.
 
 -----
