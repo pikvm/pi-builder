@@ -9,9 +9,6 @@ RUN rm -f /etc/localtime \
 
 RUN sed -i -e "s|^HOOKS=.*|HOOKS=(base udev block filesystems)|g" /etc/mkinitcpio.conf
 
-RUN sed -i -e "s|\<root=/dev/mmcblk0p2\>|root=LABEL=PIROOT|g" /boot/cmdline.txt
-RUN sed -i -e "s|^/dev/mmcblk0p1\>|LABEL=PIBOOT|g" /etc/fstab
-
 RUN echo "Server = $ARCH_DIST_REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
 	&& pacman-key --init \
 	&& pacman-key --populate archlinuxarm
@@ -61,16 +58,12 @@ RUN pacman --noconfirm --ask=4 -Syy \
 		screen \
 		dosfstools \
 		raspberrypi-utils \
-	&& case "$ARCH" in \
-		arm) \
-			case "$BOARD" in \
-				rpi2|rpi3|rpi4|zero2w) pacman --needed --noconfirm --ask=4 -S linux-rpi linux-rpi-headers;; \
-				*) pacman --needed --noconfirm --ask=4 -S linux-armv7-headers;; \
-			esac;; \
-		aarch64) pacman --needed --noconfirm --ask=4 -S linux-aarch64-headers;; \
-		*) echo "Unknown architecture: $ARCH"; exit 1;; \
-	esac \
+		linux-rpi \
+		linux-rpi-headers \
 	&& rm -rf /var/cache/pacman/pkg/*
+
+RUN sed -i -e "s|\<root=/dev/mmcblk0p2\>|root=LABEL=PIROOT|g" /boot/cmdline.txt
+RUN sed -i -e "s|^/dev/mmcblk0p1\>|LABEL=PIBOOT|g" /etc/fstab
 
 # https://github.com/pikvm/pikvm/issues/190
 RUN systemctl disable haveged || true
