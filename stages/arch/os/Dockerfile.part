@@ -84,9 +84,6 @@ ENV PATH="/usr/lib/ccache/bin/:${PATH}"
 RUN sed -i -e '/\<pam_systemd\.so\>/ s/^#*/#/' /etc/pam.d/system-login \
 	&& sed -i -e '/\<pam_systemd_home\.so\>/ s/^#*/#/' /etc/pam.d/system-auth
 
-RUN echo "DNSSEC=no" >> /etc/systemd/resolved.conf \
-	&& systemctl enable systemd-resolved
-
 # https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
 RUN ln -s /dev/null /etc/systemd/network/99-default.link
 ADD stages/os/eth0.network /etc/systemd/network/eth0.network
