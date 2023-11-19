@@ -6,13 +6,14 @@ RUN mkdir -p /var/lib/private && chmod 700 /var/lib/private \
 	&& mkdir -p /var/lib/dhcpcd && chmod 750 /var/lib/dhcpcd \
 	&& mkdir -p /var/lib/dhclient && chmod 755 /var/lib/dhclient
 
-COPY stages/ro/fstab /etc/
-COPY stages/ro/ro /usr/local/bin/
-COPY stages/ro/rw /usr/local/bin/
-COPY stages/ro/journald.conf /etc/systemd/
-ADD stages/ro/logrotate.override /etc/systemd/system/logrotate.service.d/override.conf
-
 RUN systemctl mask systemd-random-seed \
 	&& systemctl mask systemd-update-done \
 	&& systemctl mask man-db.service \
 	&& systemctl mask man-db.timer
+
+COPY stages/ro/fstab /etc/
+COPY stages/ro/journald.conf /etc/systemd/
+ADD stages/ro/logrotate.override /etc/systemd/system/logrotate.service.d/override.conf
+
+COPY stages/ro/ro /usr/local/bin/
+COPY stages/ro/rw /usr/local/bin/

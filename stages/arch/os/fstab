@@ -1,0 +1,2 @@
+LABEL=PIBOOT  /boot  vfat   defaults                0 0
+tmpfs         /tmp   tmpfs  nodev,nosuid,mode=1777  0 0
