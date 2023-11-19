@@ -295,6 +295,7 @@ extract: $(__DEP_TOOLBOX)
 				--remove-root \
 				--root=$(_RESULT_ROOTFS) \
 				--set-hostname="$(call read_built_config,HOSTNAME)" \
+				--set-resolv-symlink=/run/systemd/resolve/resolv.conf \
 				$(call contains,x86_64,$(__HOST_ARCH),--remove-qemu,) \
 			$(_RESULT_ROOTFS).tar
 	$(call say,"Extraction complete")

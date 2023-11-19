@@ -129,6 +129,33 @@ class _TarFile(tarfile.TarFile):
 
 
 # =====
+def _hook_set_hostname(root_path: str, hostname: str) -> None:
+    path = os.path.join(root_path, "etc/hostname")
+    _logger.info(":: Setting up /etc/hostname: %s ...", hostname)
+    with open(path, "w") as file:
+        file.write(hostname)
+
+
+def _hook_set_resolv_symlink(root_path: str, target_path: str) -> None:
+    _logger.info(":: Setting up symlink /etc/resolv.conf -> %s ...", target_path)
+    path = os.path.join(root_path, "etc/resolv.conf")
+    try:
+        os.unlink(path)
+    except FileNotFoundError:
+        pass
+    os.symlink(target_path, path)
+
+
+def _hook_remove_qemu(root_path: str) -> None:
+    _logger.info(":: Removing QEMU ...")
+    for name in os.listdir(os.path.join(root_path, "usr/bin")):
+        if name.startswith("qemu-") and name.endswith(("-static", "-static-orig")):
+            path = os.path.join(root_path, "usr/bin", name)
+            _logger.info("::    Removing %r ...", path)
+            os.remove(path)
+
+
+# =====
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--list-layers", action="store_true", help="List layers in an image")
@@ -137,6 +164,7 @@ def main() -> None:
     parser.add_argument("--remove-root", action="store_true", help="Remove destination directory before exporting")
     parser.add_argument("--root", default="rootfs", help="Output directory (defaults to 'rootfs')")
     parser.add_argument("--set-hostname", default="", help="Set /etc/hostname")
+    parser.add_argument("--set-resolv-symlink", default="", help="Symlink /etc/resolv.conf to specified path")
     parser.add_argument("--remove-qemu", action="store_true", help="Remove /usr/bin/qemu-*-static{,-orig}")
     parser.add_argument("input")
     parser.set_defaults(log_level=logging.INFO)
@@ -164,18 +192,13 @@ def main() -> None:
             _extract_rootfs(image_tar, _get_image_layers(image_tar), options.root)
 
             if options.set_hostname:
-                path = os.path.join(options.root, "etc/hostname")
-                _logger.info(":: Setting up the hostname in %r ...", path)
-                with open(path, "w") as file:
-                    file.write(options.set_hostname)
+                _hook_set_hostname(options.root, options.set_hostname)
+
+            if options.set_resolv_symlink:
+                _hook_set_resolv_symlink(options.root, options.set_resolv_symlink)
 
             if options.remove_qemu:
-                _logger.info(":: Removing QEMU ...")
-                for name in os.listdir(os.path.join(options.root, "usr/bin")):
-                    if name.startswith("qemu-") and name.endswith(("-static", "-static-orig")):
-                        path = os.path.join(options.root, "usr/bin", name)
-                        _logger.info("::    Removing %r ...", path)
-                        os.remove(path)
+                _hook_remove_qemu(options.root)
 
             _logger.info(":: Success!")
 
