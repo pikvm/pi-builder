@@ -1,51 +1,56 @@
+ENV DEBIAN_FRONTEND noninteractive
+
 # https://lists.gnu.org/archive/html/qemu-devel/2017-10/msg03681.html
 RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
 	&& ([ "$LOCALE" = "en_US" ] || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen) \
-	&& locale-gen
+	&& locale-gen \
+	&& update-locale LANG=$LOCALE.UTF-8 \
+	&& sed -i -e 's|\<gb\>|us|' /etc/default/keyboard
 ENV LC_ALL en_US.UTF-8
 
 RUN rm -f /etc/localtime \
-	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime \
+	&& dpkg-reconfigure -f noninteractive tzdata
 
-RUN sed -i -e "s|\<root=[^\s]\+\>|root=LABEL=PIROOT|g" /boot/cmdline.txt
-COPY stages/os/fstab /etc/
-
-ENV DEBIAN_FRONTEND noninteractive
-
-# remove network-manager with raspberrypi-sys-mods ant raspi-config
-#RUN systemctl disable \
-#		triggerhappy \
-#		pigpiod \
-#		userconfig \
-#		avahi-daemon \
-#		bluetooth \
-#		bluez-firmware \
-#		ModemManager \
-#		NetworkManager \
-#		networking \
-#		raspberrypi-net-mods \
+# Cleanup tips: https://github.com/RPi-Distro/pi-gen/tree/master/stage2
 RUN apt autoremove -y --purge \
 		triggerhappy \
-		libgpiod2 \
 		python3-lgpio \
 		python3-pigpio \
 		python3-gpiozero \
 		python3-rpi.gpio \
 		rpi.gpio-common \
 		pigpio \
+		gdb \
 		flashrom \
+		mkvtoolnix \
 		userconf-pi \
 		avahi-daemon \
-		bluez \
-		mkvtoolnix \
+		pi-bluetooth \
+		'bluez*' \
+		udisks2 \
+		ntfs-3g \
+		'cifs*' \
+		dphys-swapfile \
+		cron \
+		rpcbind \
 		modemmanager \
+		network-manager \
 		ifupdown \
+		usb-modeswitch \
 		libraspberrypi-dev \
 		libraspberrypi-doc \
+		'libcamera*' \
+		raspberrypi-sys-mods \
 		raspberrypi-net-mods \
+		raspi-config \
+		'luajit*' \
+		'lua5*' \
+		'libmtp*' \
 	&& apt-get update \
 	&& apt install -y \
 		systemd-resolved \
+		wireless-regdb \
 		vim \
 		colordiff \
 		tree \
@@ -69,9 +74,17 @@ RUN apt autoremove -y --purge \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
-ADD stages/os/eth0.network /etc/systemd/network/eth0.network
 RUN systemctl enable \
 		systemd-resolved \
 		systemd-networkd
 
+RUN (systemctl disable resize2fs_once || true) \
+	&& rm -f /etc/init.d/resize2fs_once /etc/rc?.d/*resize2fs_once
+
+COPY stages/os/cmdline.txt /boot/
+COPY stages/os/fstab /etc/
 COPY stages/os/e2fsck.conf /etc/
+COPY stages/os/eth0.network /etc/systemd/network/
+
+RUN echo "root:root" | chpasswd
+RUN echo "pi:pi" | chpasswd
