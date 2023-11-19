@@ -41,7 +41,7 @@ BUILD_OPTS ?=
 
 HOSTNAME ?= pi
 LOCALE ?= en_US
-TIMEZONE ?= Europe/Moscow
+TIMEZONE ?= UTC
 
 export ARCH_DIST_REPO_URL ?= https://de3.mirror.archlinuxarm.org
 ARCH_PIKVM_REPO_URL ?= https://files.pikvm.org/repos/arch/
