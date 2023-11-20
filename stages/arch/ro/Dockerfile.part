@@ -4,9 +4,7 @@ RUN sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
 
 RUN mkdir -p /var/lib/private && chmod 700 /var/lib/private \
 	&& mkdir -p /var/lib/dhcpcd && chmod 750 /var/lib/dhcpcd \
-	&& mkdir -p /var/lib/dhclient && chmod 755 /var/lib/dhclient \
-	&& mkdir -p /var/cache/private && chmod 700 /var/cache/private \
-	&& mkdir -p /var/cache/man && chmod 755 /var/cache/man
+	&& mkdir -p /var/lib/dhclient && chmod 755 /var/lib/dhclient
 
 RUN systemctl mask systemd-random-seed \
 	&& systemctl mask systemd-update-done \
