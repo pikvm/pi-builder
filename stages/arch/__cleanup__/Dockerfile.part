@@ -16,8 +16,7 @@ RUN rm -rf \
 		`LC_ALL=C pacman -Qo /var/cache/* 2>&1 | grep 'error: No package owns' | awk '{print $5}'` \
 	|| true
 
-RUN mv /etc/pacman.conf.bak /etc/pacman.conf \
-	&& (mv /etc/pacman.conf.pacnew /etc/pacman.conf || true)
+RUN sed -i -e "s/^#!!!CheckSpace/CheckSpace/g" /etc/pacman.conf
 
 # Check if we have fsck.repair=yes
 RUN grep -q -o '\<fsck.repair=yes\>' /boot/cmdline.txt

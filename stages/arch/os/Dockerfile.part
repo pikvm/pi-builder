@@ -13,8 +13,7 @@ RUN echo "Server = $ARCH_DIST_REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist
 	&& pacman-key --init \
 	&& pacman-key --populate archlinuxarm
 
-RUN cp -a /etc/pacman.conf /etc/pacman.conf.bak \
-	&& sed -i -e "s/^CheckSpace/#!!!CheckSpace/g" /etc/pacman.conf
+RUN sed -i -e "s/^CheckSpace/#!!!CheckSpace/g" /etc/pacman.conf
 
 RUN pacman --noconfirm --ask=4 -Syy \
 	&& pacman --needed --noconfirm --ask=4 -S \
