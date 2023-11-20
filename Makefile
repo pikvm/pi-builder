@@ -36,7 +36,7 @@ PROJECT ?= common
 OS ?= arch
 export BOARD ?= rpi4
 export ARCH ?= arm
-STAGES ?= __init__ os pikvm-repo watchdog rootdelay no-bluetooth no-audit ro ssh-keygen __cleanup__
+STAGES ?= __init__ os pikvm-repo pistat watchdog rootdelay no-bluetooth no-audit ro ssh-keygen __cleanup__
 BUILD_OPTS ?=
 
 HOSTNAME ?= pi

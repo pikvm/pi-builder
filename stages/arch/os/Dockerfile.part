@@ -89,6 +89,4 @@ RUN mkdir /tmp/linux-profile \
 	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim,.gitconfig} \
 	&& rm -rf /tmp/linux-profile
 
-COPY stages/os/pistat /usr/local/bin/
-
 COPY stages/os/pkg-install /usr/local/bin/
