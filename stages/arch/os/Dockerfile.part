@@ -83,10 +83,10 @@ COPY stages/os/gitconfig /root/.gitconfig
 COPY stages/os/gitconfig /home/alarm/.gitconfig
 RUN mkdir /tmp/linux-profile \
 	&& git clone --depth=1 https://github.com/mdevaev/linux-profile.git /tmp/linux-profile \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim} /etc/skel \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim} /root \
-	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim} /home/alarm \
-	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.vimrc,.vimpagerrc,.vim,.gitconfig} \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vim} /etc/skel \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vim} /root \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vim} /home/alarm \
+	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.vimrc,.vim,.gitconfig} \
 	&& rm -rf /tmp/linux-profile
 
 COPY stages/os/pkg-install /usr/local/bin/
