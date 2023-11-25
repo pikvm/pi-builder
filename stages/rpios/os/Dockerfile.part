@@ -47,6 +47,7 @@ RUN apt autoremove -y --purge \
 		'lua5*' \
 		'libmtp*' \
 	&& apt-get update \
+	&& apt full-upgrade -y \
 	&& apt install -y \
 		systemd-resolved \
 		wireless-regdb \
