@@ -4,7 +4,8 @@ RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
 	&& ([ "$LOCALE" = "en_US" ] || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen) \
 	&& locale-gen \
 	&& update-locale LANG=$LOCALE.UTF-8 \
-	&& sed -i -e 's|\<gb\>|us|g' /etc/default/keyboard
+	&& sed -i -e 's|\<gb\>|us|g' /etc/default/keyboard \
+	&& setupcon --save-only
 ENV LC_ALL en_US.UTF-8
 
 RUN rm -f /etc/localtime \
@@ -74,17 +75,33 @@ RUN apt autoremove -y --purge \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
-RUN systemctl enable \
-		systemd-resolved \
-		systemd-networkd
-
-RUN (systemctl disable resize2fs_once || true) \
+RUN systemctl disable \
+		wpa_supplicant.service \
+		remote-fs.target \
+		resize2fs_once.service \
 	&& rm -f /etc/init.d/resize2fs_once /etc/rc?.d/*resize2fs_once
+
+RUN systemctl enable \
+		systemd-resolved.service \
+		systemd-networkd.service
 
 COPY stages/os/cmdline.txt /boot/
 COPY stages/os/fstab /etc/
 COPY stages/os/e2fsck.conf /etc/
 COPY stages/os/eth0.network /etc/systemd/network/
+
+COPY stages/os/gitconfig /etc/skel/.gitconfig
+COPY stages/os/gitconfig /root/.gitconfig
+COPY stages/os/gitconfig /home/pi/.gitconfig
+RUN mkdir /tmp/linux-profile \
+	&& git clone --depth=1 https://github.com/mdevaev/linux-profile.git /tmp/linux-profile \
+	&& cd /tmp/linux-profile \
+	&& cp -a .bash_profile .bashrc .vimrc .vim /etc/skel \
+	&& cp -a .bash_profile .bashrc .vimrc .vim /root \
+	&& cp -a .bash_profile .bashrc .vimrc .vim /home/pi \
+	&& cd /home/pi \
+	&& chown -R pi:pi .bash_profile .bashrc .vimrc .vim .gitconfig \
+	&& rm -rf /tmp/linux-profile
 
 RUN echo "root:root" | chpasswd
 RUN echo "pi:pi" | chpasswd

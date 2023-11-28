@@ -1,0 +1,36 @@
+# https://wiki.debian.org/ReadonlyRoot
+
+RUN sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
+
+RUN ln -s /etc/machine-id /var/lib/dbus/machine-id \
+	&& ln -sf ../proc/self/mounts /etc/mtab
+
+RUN mkdir -p /var/lib/private && chmod 700 /var/lib/private \
+	&& mkdir -p /var/lib/dhcpcd && chmod 755 /var/lib/dhcpcd \
+	&& mkdir -p /var/lib/dhcp && chmod 755 /var/lib/dhcp
+
+RUN services=" \
+		systemd-random-seed.service \
+		systemd-network-generator.service \
+		systemd-pstore.service \
+		fake-hwclock.service \
+		console-setup.service \
+		man-db.service \
+		man-db.timer \
+		apt-daily.timer \
+		apt-daily-upgrade.timer \
+		dpkg-db-backup.timer \
+		fstrim.timer \
+		e2scrub_reap.service \
+		e2scrub_all.timer \
+		rpi-eeprom-update.service \
+	" \
+	&& systemctl disable $services \
+	&& systemctl mask $services
+
+COPY stages/ro/fstab /etc/
+COPY stages/ro/journald.conf /etc/systemd/
+ADD stages/ro/logrotate.override /etc/systemd/system/logrotate.service.d/override.conf
+
+COPY stages/ro/ro /usr/local/bin/
+COPY stages/ro/rw /usr/local/bin/

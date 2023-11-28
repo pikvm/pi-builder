@@ -1,0 +1,2 @@
+RUN curl https://raw.githubusercontent.com/pikvm/packages/master/packages/pistat/pistat.sh -o /usr/local/bin/pistat \
+	&& chmod +x /usr/local/bin/pistat
