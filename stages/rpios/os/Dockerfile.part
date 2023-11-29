@@ -5,7 +5,7 @@ RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
 	&& locale-gen \
 	&& update-locale LANG=$LOCALE.UTF-8 \
 	&& sed -i -e 's|\<gb\>|us|g' /etc/default/keyboard \
-	&& setupcon --save-only
+	&& setupcon --force --save-only -v
 ENV LC_ALL en_US.UTF-8
 
 RUN rm -f /etc/localtime \
