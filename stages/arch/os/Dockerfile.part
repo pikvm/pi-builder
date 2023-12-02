@@ -69,6 +69,8 @@ RUN (systemctl disable haveged || true) \
 RUN sed -i -e '/\<pam_systemd\.so\>/ s/^#*/#/' /etc/pam.d/system-login \
 	&& sed -i -e '/\<pam_systemd_home\.so\>/ s/^#*/#/' /etc/pam.d/system-auth
 
+RUN rm /etc/systemd/network/en.network
+
 # https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
 RUN ln -s /dev/null /etc/systemd/network/99-default.link
 
