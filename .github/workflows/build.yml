@@ -4,9 +4,9 @@ jobs:
   os:
     runs-on: ubuntu-latest
     
-  steps:
-  - name: Check out code
-    uses: actions/checkout@v3
-    
-  - name: Build docker images
-    run: make rpi
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      
+    - name: Build docker images
+      run: make rpi
