@@ -6,10 +6,18 @@ RUN mkdir -p /var/lib/private && chmod 700 /var/lib/private \
 	&& mkdir -p /var/lib/dhcpcd && chmod 750 /var/lib/dhcpcd \
 	&& mkdir -p /var/lib/dhclient && chmod 755 /var/lib/dhclient
 
-RUN systemctl mask systemd-random-seed \
-	&& systemctl mask systemd-update-done \
-	&& systemctl mask man-db.service \
-	&& systemctl mask man-db.timer
+# https://github.com/pikvm/pikvm/issues/1245
+RUN systemctl mask \
+		systemd-random-seed \
+		systemd-update-done \
+		man-db.service \
+		man-db.timer \
+		dirmngr@etc-pacman.d-gnupg.socket \
+		gpg-agent-browser@etc-pacman.d-gnupg.socket \
+		gpg-agent-extra@etc-pacman.d-gnupg.socket \
+		gpg-agent-ssh@etc-pacman.d-gnupg.socket \
+		gpg-agent@etc-pacman.d-gnupg.socket \
+		keyboxd@etc-pacman.d-gnupg.socket
 
 COPY stages/ro/fstab /etc/
 COPY stages/ro/journald.conf /etc/systemd/
