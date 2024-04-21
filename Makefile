@@ -258,7 +258,7 @@ test ! -d $(_CACHE_DIR) || $(DOCKER_RUN_TTY) \
 endef
 
 define remove_image
-rm -f $(IMAGE) $(IMAGE).xz $(IMAGE).xz.sha1
+rm -f $(IMAGE) $(IMAGE).sha1 $(IMAGE).xz $(IMAGE).xz.sha1
 endef
 
 
