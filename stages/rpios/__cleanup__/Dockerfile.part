@@ -18,7 +18,7 @@ RUN apt-get clean \
 	&& mv /var/log/._README_.pi-builder /var/log/README
 
 # Check if we have fsck.repair=yes
-#RUN grep -q -o '\<fsck.repair=yes\>' /boot/cmdline.txt
+#RUN grep -q -o '\<fsck.repair=yes\>' /boot/firmware/cmdline.txt
 
 RUN touch -m --date="2000-01-01" /etc/fstab
 

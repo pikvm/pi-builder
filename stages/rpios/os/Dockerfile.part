@@ -84,9 +84,10 @@ RUN systemctl disable \
 
 RUN systemctl enable \
 		systemd-resolved.service \
-		systemd-networkd.service
+		systemd-networkd.service \
+		ssh.service
 
-COPY stages/os/cmdline.txt /boot/
+COPY stages/os/cmdline.txt /boot/firmware/
 COPY stages/os/fstab /etc/
 COPY stages/os/e2fsck.conf /etc/
 COPY stages/os/eth0.network /etc/systemd/network/
@@ -103,6 +104,8 @@ RUN mkdir /tmp/linux-profile \
 	&& cd /home/pi \
 	&& chown -R pi:pi .bash_profile .bashrc .vimrc .vim .gitconfig \
 	&& rm -rf /tmp/linux-profile
+
+RUN gpasswd -d pi sudo
 
 RUN echo "root:root" | chpasswd
 RUN echo "pi:pi" | chpasswd

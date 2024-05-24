@@ -1,6 +1,6 @@
 # https://wiki.debian.org/ReadonlyRoot
 
-RUN sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
+RUN sed -i -e "s|\<rw\>|ro|g" /boot/firmware/cmdline.txt
 
 RUN ln -s /etc/machine-id /var/lib/dbus/machine-id \
 	&& ln -sf ../proc/self/mounts /etc/mtab
