@@ -1,4 +1,4 @@
-RUN userdel -r -f alarm
+RUN userdel -r -f alarm || true
 
 COPY stages/ssh-root/pubkeys pubkeys
 RUN mkdir -p /root/.ssh \

@@ -23,7 +23,8 @@
 
 include lib.mk
 
--include config.mk
+CFG_FILE ?= config.mk
+-include $(CFG_FILE)
 
 export SUDO ?= sudo
 export DOCKER ?= docker
@@ -55,6 +56,7 @@ DISK ?= ./disk/$(OS).conf
 CARD ?= /dev/mmcblk0
 IMAGE ?= ./$(PROJECT).$(OS)-$(BOARD)-$(ARCH).img
 IMAGE_XZ ?=
+REBUILD ?= $(shell uuidgen)
 
 
 # =====
@@ -194,7 +196,7 @@ os: $(__DEP_BINFMT) _buildctx
 			--build-arg "ARCH_DIST_REPO_URL=$(ARCH_DIST_REPO_URL)" \
 			--build-arg "ARCH_PIKVM_REPO_URL=$(ARCH_PIKVM_REPO_URL)" \
 			--build-arg "ARCH_PIKVM_REPO_KEY=$(ARCH_PIKVM_REPO_KEY)" \
-			--build-arg "REBUILD=$(shell uuidgen)" \
+			--build-arg "REBUILD=$(REBUILD)" \
 			$(BUILD_OPTS) \
 		.
 	echo "IMAGE=$(_image)" > $(_BUILT_IMAGE_CONFIG)
