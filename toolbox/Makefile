@@ -36,7 +36,7 @@ toolbox: clean-all
 	$(call not_empty,ARCH_DIST_REPO_URL)
 	$(call not_empty,_TOOLBOX_IMAGE)
 	$(call not_empty,__HOST_ARCH)
-	test $(ARCH) != $(__HOST_ARCH) || ln ../base/arch-$(BOARD)-$(ARCH).tgz .
+	if grep -q '^ADD %BASE_ROOTFS_TGZ%' Dockerfile.$(__HOST_ARCH); then ln ../base/arch-$(BOARD)-$(ARCH).tgz . ; fi
 	sed -e 's|%BASE_ROOTFS_TGZ%|arch-$(BOARD)-$(ARCH).tgz|g' Dockerfile.$(__HOST_ARCH) > Dockerfile
 	cat Dockerfile.common >> Dockerfile
 	$(DOCKER) build \
