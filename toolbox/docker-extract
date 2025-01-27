@@ -99,6 +99,7 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: list[str], root_path: st
                     path=root_path,
                     members=[member for member in members if "/.wh." not in member.path],  # type: ignore
                     numeric_owner=True,
+                    filter="fully_trusted",
                 )
 
 
