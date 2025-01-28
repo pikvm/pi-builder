@@ -222,7 +222,7 @@ _buildctx: | clean base qemu
 		|| sed -i -e 's|%COPY_QEMU_USER_STATIC%||g' $(_init)
 	for var in OS BOARD ARCH LOCALE TIMEZONE ARCH_DIST_REPO_URL ARCH_PIKVM_REPO_URL ARCH_PIKVM_REPO_KEY; do \
 		echo "ARG $$var" >> $(_init) \
-		&& echo "ENV $$var \$$$$var" >> $(_init) \
+		&& echo "ENV $$var=\$$$$var" >> $(_init) \
 	; done
 	#
 	echo -n > $(_BUILD_DIR)/Dockerfile

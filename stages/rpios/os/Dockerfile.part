@@ -1,4 +1,4 @@
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
 	&& ([ "$LOCALE" = "en_US" ] || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen) \
@@ -7,7 +7,7 @@ RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
 	&& update-locale LANG=$LOCALE.UTF-8 \
 	&& sed -i -e 's|\<gb\>|us|g' /etc/default/keyboard \
 	&& setupcon --force --save-only -v
-ENV LC_ALL en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 RUN rm -f /etc/localtime \
 	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime \

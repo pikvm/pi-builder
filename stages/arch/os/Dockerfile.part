@@ -2,7 +2,7 @@ RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
 	&& ([ "$LOCALE" = "en_US" ] || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen) \
 	&& ([ "$LOCALE" = "C" ] || echo "C.UTF-8 UTF-8" >> /etc/locale.gen) \
 	&& locale-gen
-ENV LC_ALL en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 RUN rm -f /etc/localtime \
 	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
