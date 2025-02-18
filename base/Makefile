@@ -32,7 +32,7 @@ all:
 # =====
 _ARCH_LIST := \
 	$(call append,arch-,-arm,rpi2 rpi3 rpi4 zero2w) \
-	$(call append,arch-,-aarch64,rpi3 rpi4)
+	$(call append,arch-,-aarch64,rpi3 rpi4 rpi5 zero2w)
 
 
 $(call append,,.tgz,$(_ARCH_LIST)):
@@ -45,7 +45,7 @@ $(call append,,.tgz,$(_ARCH_LIST)):
 # =====
 _RPIOS_LIST := \
 	$(call append,rpios-,-arm,rpi rpi2 rpi3 rpi4 rpi5 zerow zero2w) \
-	$(call append,rpios-,-aarch64,rpi3 rpi4 rpi5)
+	$(call append,rpios-,-aarch64,rpi3 rpi4 rpi5 zero2w)
 
 
 $(call append,,.tgz,$(_RPIOS_LIST)):
