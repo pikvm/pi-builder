@@ -1,0 +1,111 @@
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
+	&& ([ "$LOCALE" = "en_US" ] || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen) \
+	&& ([ "$LOCALE" = "C" ] || echo "C.UTF-8 UTF-8" >> /etc/locale.gen) \
+	&& locale-gen \
+	&& update-locale LANG=$LOCALE.UTF-8 \
+	&& sed -i -e 's|\<gb\>|us|g' /etc/default/keyboard \
+	&& setupcon --force --save-only -v
+ENV LC_ALL=en_US.UTF-8
+
+RUN rm -f /etc/localtime \
+	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime \
+	&& dpkg-reconfigure -f noninteractive tzdata
+
+# Cleanup tips: https://github.com/RPi-Distro/pi-gen/tree/master/stage2
+RUN apt autoremove -y --purge \
+		triggerhappy \
+		python3-lgpio \
+		python3-pigpio \
+		python3-gpiozero \
+		python3-rpi.gpio \
+		rpi.gpio-common \
+		pigpio \
+		gdb \
+		flashrom \
+		mkvtoolnix \
+		userconf-pi \
+		avahi-daemon \
+		pi-bluetooth \
+		'bluez*' \
+		udisks2 \
+		ntfs-3g \
+		'cifs*' \
+		dphys-swapfile \
+		cron \
+		rpcbind \
+		modemmanager \
+		network-manager \
+		ifupdown \
+		usb-modeswitch \
+		libraspberrypi-dev \
+		libraspberrypi-doc \
+		'libcamera*' \
+		raspberrypi-sys-mods \
+		raspberrypi-net-mods \
+		raspi-config \
+		'luajit*' \
+		'lua5*' \
+		'libmtp*' \
+	&& apt-get update \
+	&& apt full-upgrade -y \
+	&& apt install -y \
+		systemd-resolved \
+		wireless-regdb \
+		vim \
+		colordiff \
+		tree \
+		wget \
+		unzip \
+		unrar-free \
+		htop \
+		nmap \
+		ethtool \
+		iftop \
+		iotop \
+		strace \
+		usbutils \
+		pciutils \
+		lsof \
+		git \
+		jshon \
+		bc \
+		screen \
+		dosfstools \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN systemctl disable \
+		wpa_supplicant.service \
+		remote-fs.target \
+		resize2fs_once.service \
+	&& rm -f /etc/init.d/resize2fs_once /etc/rc?.d/*resize2fs_once
+
+RUN systemctl enable \
+		systemd-resolved.service \
+		systemd-networkd.service \
+		ssh.service
+
+COPY stages/os/cmdline.txt /boot/firmware/
+COPY stages/os/fstab /etc/
+COPY stages/os/e2fsck.conf /etc/
+COPY stages/os/eth0.network /etc/systemd/network/
+
+COPY stages/os/gitconfig /etc/skel/.gitconfig
+COPY stages/os/gitconfig /root/.gitconfig
+COPY stages/os/gitconfig /home/pi/.gitconfig
+RUN mkdir /tmp/linux-profile \
+	&& git clone --depth=1 https://github.com/mdevaev/linux-profile.git /tmp/linux-profile \
+	&& cd /tmp/linux-profile \
+	&& cp -a .bash_profile .bashrc .vimrc .vim /etc/skel \
+	&& cp -a .bash_profile .bashrc .vimrc .vim /root \
+	&& cp -a .bash_profile .bashrc .vimrc .vim /home/pi \
+	&& cd /home/pi \
+	&& chown -R pi:pi .bash_profile .bashrc .vimrc .vim .gitconfig \
+	&& rm -rf /tmp/linux-profile
+
+RUN gpasswd -d pi sudo
+
+RUN echo "root:root" | chpasswd
+RUN echo "pi:pi" | chpasswd

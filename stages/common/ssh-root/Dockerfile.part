@@ -1,0 +1,11 @@
+RUN userdel -r -f alarm || true
+
+COPY stages/ssh-root/pubkeys pubkeys
+RUN mkdir -p /root/.ssh \
+	&& chmod 700 /root/.ssh \
+	&& cat pubkeys/*.pub > /root/.ssh/authorized_keys \
+	&& chmod 600 /root/.ssh/authorized_keys \
+	&& rm -rf pubkeys
+
+RUN passwd -l root \
+	&& echo "PasswordAuthentication no" >> "/etc/ssh/sshd_config"

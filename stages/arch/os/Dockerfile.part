@@ -1,0 +1,96 @@
+RUN echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen \
+	&& ([ "$LOCALE" = "en_US" ] || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen) \
+	&& ([ "$LOCALE" = "C" ] || echo "C.UTF-8 UTF-8" >> /etc/locale.gen) \
+	&& locale-gen
+ENV LC_ALL=en_US.UTF-8
+
+RUN rm -f /etc/localtime \
+	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+
+RUN sed -i -e "s|^HOOKS=.*|HOOKS=(base udev block filesystems)|g" /etc/mkinitcpio.conf
+
+RUN cp /etc/pacman.d/mirrorlist /tmp/pacman.mirrorlist.saved \
+	&& echo "Server = $ARCH_DIST_REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
+	&& pacman-key --init \
+	&& pacman-key --populate archlinuxarm
+
+RUN sed -i -e "s/^CheckSpace/#!!!CheckSpace/g" /etc/pacman.conf
+
+RUN pacman --noconfirm --ask=4 -Syy \
+	&& pacman --noconfirm --ask=4 -Syu \
+	&& pacman --needed --noconfirm --ask=4 -S \
+		glibc \
+		openssl \
+		openssl-1.1 \
+	&& pacman --needed --noconfirm --ask=4 -S \
+		pacman \
+	&& pacman-db-upgrade \
+	&& pacman-key --init \
+	&& pacman --needed --noconfirm --ask=4 -S \
+		p11-kit \
+		archlinux-keyring \
+		ca-certificates \
+		ca-certificates-mozilla \
+		ca-certificates-utils \
+	&& pacman --noconfirm --ask=4 -Syu \
+	&& pacman --needed --noconfirm --ask=4 -S \
+		base \
+		base-devel \
+		man \
+		vim \
+		colordiff \
+		tree \
+		wget \
+		unzip \
+		unrar \
+		htop \
+		nmap \
+		ethtool \
+		iftop \
+		iotop \
+		dysk \
+		strace \
+		usbutils \
+		pciutils \
+		lsof \
+		git \
+		jshon \
+		rng-tools \
+		bc \
+		screen \
+		dosfstools \
+		raspberrypi-utils \
+		linux-rpi \
+		linux-rpi-headers \
+	&& rm -rf /var/cache/pacman/pkg/*
+
+# https://github.com/pikvm/pikvm/issues/190
+RUN (systemctl disable haveged || true) \
+	&& systemctl enable rngd
+
+RUN sed -i -e '/\<pam_systemd\.so\>/ s/^#*/#/' /etc/pam.d/system-login \
+	&& sed -i -e '/\<pam_systemd_home\.so\>/ s/^#*/#/' /etc/pam.d/system-auth
+
+RUN rm -f /etc/systemd/network/en.network /etc/systemd/network/eth.network
+
+# https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
+RUN ln -s /dev/null /etc/systemd/network/99-default.link
+
+COPY stages/os/cmdline.txt /boot/
+COPY stages/os/fstab /etc/
+COPY stages/os/e2fsck.conf /etc/
+COPY stages/os/eth0.network /etc/systemd/network/
+COPY stages/os/rngd /etc/conf.d/
+
+COPY stages/os/gitconfig /etc/skel/.gitconfig
+COPY stages/os/gitconfig /root/.gitconfig
+COPY stages/os/gitconfig /home/alarm/.gitconfig
+RUN mkdir /tmp/linux-profile \
+	&& git clone --depth=1 https://github.com/mdevaev/linux-profile.git /tmp/linux-profile \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vim} /etc/skel \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vim} /root \
+	&& cp -a /tmp/linux-profile/{.bash_profile,.bashrc,.vimrc,.vim} /home/alarm \
+	&& chown -R alarm:alarm /home/alarm/{.bash_profile,.bashrc,.vimrc,.vim,.gitconfig} \
+	&& rm -rf /tmp/linux-profile
+
+COPY stages/os/pkg-install /usr/local/bin/

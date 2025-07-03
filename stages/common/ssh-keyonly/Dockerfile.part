@@ -1,0 +1,20 @@
+COPY stages/ssh-keyonly/pubkeys pubkeys
+
+RUN mkdir -p /root/.ssh \
+	&& chmod 700 /root/.ssh \
+	&& cat pubkeys/*.pub > /root/.ssh/authorized_keys \
+	&& chmod 600 /root/.ssh/authorized_keys \
+	&& passwd -l root
+
+RUN for user in `ls /home`; do \
+		mkdir -p /home/$user/.ssh \
+		&& chmod 700 /home/$user/.ssh \
+		&& cat pubkeys/*.pub > /home/$user/.ssh/authorized_keys \
+		&& chmod 600 /home/$user/.ssh/authorized_keys \
+		&& chown -R $user: /home/alarm/.ssh \
+		&& passwd -l $user \
+	; done
+
+RUN rm -rf pubkeys
+
+RUN echo "PasswordAuthentication no" >> "/etc/ssh/sshd_config"

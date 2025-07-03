@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+# ========================================================================== #
+#                                                                            #
+#    install - Card/image installer.                                         #
+#                                                                            #
+#    Copyright (C) 2022-2023  Maxim Devaev <mdevaev@gmail.com>               #
+#                                                                            #
+#    This program is free software: you can redistribute it and/or modify    #
+#    it under the terms of the GNU General Public License as published by    #
+#    the Free Software Foundation, either version 3 of the License, or       #
+#    (at your option) any later version.                                     #
+#                                                                            #
+#    This program is distributed in the hope that it will be useful,         #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of          #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
+#    GNU General Public License for more details.                            #
+#                                                                            #
+#    You should have received a copy of the GNU General Public License       #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.  #
+#                                                                            #
+# ========================================================================== #
+
+
+import sys
+import os
+import re
+import subprocess
+import shutil
+import argparse
+
+
+# =====
+def _run(cmd: list[str], input: (str | None)=None, read: bool=False) -> str:
+    print(f"CMD [ {sys.argv[0]} ] ==>", " ".join(cmd))
+    sys.stdout.flush()
+    proc = subprocess.Popen(
+        cmd,
+        stdin=(None if input is None else subprocess.PIPE),
+        stdout=(subprocess.PIPE if read else sys.stdout),
+        stderr=sys.stderr,
+        preexec_fn=os.setpgrp,
+    )
+    data = proc.communicate(None if input is None else input.encode())[0]
+    retcode = proc.poll()
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if retcode != 0:
+        raise SystemExit(1)
+    return (data.decode().strip() if read else "")
+
+
+# =====
+def _install_card(rootfs_path: str, dev_path: str, disk_conf: str) -> None:
+    _run(["dd", "if=/dev/zero", f"of={dev_path}", "bs=1M", "count=32"])
+    _run(["partprobe", dev_path])
+
+    _run(["/tools/disk", "format", dev_path], input=disk_conf)
+    _run(["/tools/disk", "mkfs", dev_path], input=disk_conf)
+
+    _run(["/tools/disk", "mount", dev_path, "__mnt__"], input=disk_conf)
+    to_copy = [os.path.join(rootfs_path, name) for name in os.listdir(rootfs_path)]
+    _run(["rsync", "-a", "--quiet", *to_copy, "__mnt__"])
+    _run(["/tools/disk", "umount", dev_path], input=disk_conf)
+
+
+def _install_image(devfs_prefix: str, rootfs_path: str, image_path: str, compress: bool, disk_conf: str) -> None:
+    size_str = _run(["/tools/disk", "print-size"], input=disk_conf, read=True)
+    _run(["truncate", "-s", size_str, image_path])
+
+    loop_path = devfs_prefix + "/" + _run(["losetup", "-f"], read=True)
+    if not os.path.exists(loop_path):
+        _run(["mknod", loop_path, "b", "7", str(re.match(r".*(\d+)$", loop_path).group(1))])
+
+    _run(["losetup", loop_path, image_path])
+    try:
+        _install_card(rootfs_path, loop_path, disk_conf)
+    finally:
+        _run(["losetup", "-d", loop_path])
+
+    if compress:
+        _run(["xz", f"-T{os.cpu_count()}", "-v", "--compress", image_path])
+        image_path += ".xz"
+
+    sha1 = _run(["sha1sum", image_path], read=True).split()[0]
+    sha1_path = image_path + ".sha1"
+    with open(sha1_path, "w") as file:
+        file.write(sha1)
+    shutil.copymode(image_path, sha1_path)
+
+
+# =====
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--card", default="")
+    group.add_argument("--image", default="")
+    parser.add_argument("--root", required=True)
+    parser.add_argument("--devfs-prefix", default="/")
+    parser.add_argument("--compress", action="store_true")
+    options = parser.parse_args()
+
+    if options.card:
+        _install_card(options.root, options.card, sys.stdin.read())
+    elif options.image:
+        _install_image(options.devfs_prefix, options.root, options.image, options.compress, sys.stdin.read())
+
+
+if __name__ == "__main__":
+    main()

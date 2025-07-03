@@ -1,0 +1,4 @@
+LABEL=PIROOT    /               ext4   defaults,noatime        0 1
+LABEL=PIBOOTFW  /boot/firmware  vfat   defaults                0 2
+proc            /proc           proc   defaults                0 0
+tmpfs           /tmp            tmpfs  nodev,nosuid,mode=1777  0 0

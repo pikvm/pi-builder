@@ -1,0 +1,14 @@
+/toolbox/*.tgz
+/toolbox/Dockerfile
+/qemu/.pkg.*/
+/base/*.tgz*
+/base/*.img*
+/nase/*.mnt
+/.cache/
+/.build/
+/.built.conf
+/*.img
+/*.img.sha1
+/*.img.xz
+/*.img.xz.sha1
+/config.mk

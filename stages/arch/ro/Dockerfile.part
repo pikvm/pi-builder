@@ -1,0 +1,27 @@
+# Based on https://gist.github.com/yeokm1/8b0ffc03e622ce011010
+
+RUN sed -i -e "s|\<rw\>|ro|g" /boot/cmdline.txt
+
+RUN mkdir -p /var/lib/private && chmod 700 /var/lib/private \
+	&& mkdir -p /var/lib/dhcpcd && chmod 750 /var/lib/dhcpcd \
+	&& mkdir -p /var/lib/dhclient && chmod 755 /var/lib/dhclient
+
+# https://github.com/pikvm/pikvm/issues/1245
+RUN systemctl mask \
+		systemd-random-seed \
+		systemd-update-done \
+		man-db.service \
+		man-db.timer \
+		dirmngr@etc-pacman.d-gnupg.socket \
+		gpg-agent-browser@etc-pacman.d-gnupg.socket \
+		gpg-agent-extra@etc-pacman.d-gnupg.socket \
+		gpg-agent-ssh@etc-pacman.d-gnupg.socket \
+		gpg-agent@etc-pacman.d-gnupg.socket \
+		keyboxd@etc-pacman.d-gnupg.socket
+
+COPY stages/ro/fstab /etc/
+COPY stages/ro/journald.conf /etc/systemd/
+ADD stages/ro/logrotate.override /etc/systemd/system/logrotate.service.d/override.conf
+
+COPY stages/ro/ro /usr/local/bin/
+COPY stages/ro/rw /usr/local/bin/

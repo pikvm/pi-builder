@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+# ========================================================================== #
+#                                                                            #
+#    install-binfmt - mount binfmt_misc and register extra handlers.         #
+#                                                                            #
+#    Copyright (C) 2019-2023  Maxim Devaev <mdevaev@gmail.com>               #
+#                                                                            #
+#    This program is free software: you can redistribute it and/or modify    #
+#    it under the terms of the GNU General Public License as published by    #
+#    the Free Software Foundation, either version 3 of the License, or       #
+#    (at your option) any later version.                                     #
+#                                                                            #
+#    This program is distributed in the hope that it will be useful,         #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of          #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
+#    GNU General Public License for more details.                            #
+#                                                                            #
+#    You should have received a copy of the GNU General Public License       #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.  #
+#                                                                            #
+# ========================================================================== #
+
+
+import os
+import subprocess
+import dataclasses
+import argparse
+import logging
+
+
+# =====
+@dataclasses.dataclass(frozen=True)
+class _Binfmt:
+    name: str
+    arch: str
+    magic: str
+    mask: str
+
+
+_BINFMT_DB = {
+    binfmt.arch: binfmt
+    for binfmt in [
+        _Binfmt(
+            name="ARM",
+            arch="arm",
+            magic=r"\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00",
+            mask=r"\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff",
+        ),
+        _Binfmt(
+            name="AArch64",
+            arch="aarch64",
+            magic=r"\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00",
+            mask=r"\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff",
+        ),
+    ]
+}
+
+
+# =====
+_logger = logging.getLogger("install-binfmt")
+
+
+# =====
+def _mount_binfmt(mount_path: str) -> None:
+    _logger.info(":: Mounting binfmt_misc to %r ...", mount_path)
+    subprocess.check_output(["mount", "binfmt_misc", "-t", "binfmt_misc", mount_path])
+
+
+def _check_binfmt(mount_path: str, binfmt: _Binfmt, interpreter_path: str) -> bool:
+    _logger.info(":: Checking %s binfmt configuration ...", binfmt.name)
+
+    binfmt_path = os.path.join(mount_path, binfmt.arch)
+    if os.path.exists(binfmt_path):
+        _logger.info(":: Found existent %s binfmt handler", binfmt.name)
+
+        with open(binfmt_path) as binfmt_file:
+            current_params: dict[str, str] = dict(
+                (row.split(" ", 1) + [""])[:2]  # type: ignore
+                for row in filter(None, binfmt_file.read().split("\n"))
+            )
+            _logger.debug(":: Current configuration: %s", current_params)
+
+        mismatch = "\n".join(
+            f"  - Current {name} {current!r} != expected {expected!r}"
+            for (name, current, expected) in [
+                ("magic", current_params.get("magic", "").replace("454c46", "ELF"), binfmt.magic.replace(r"\x", "")),
+                ("mask", current_params.get("mask", ""), binfmt.mask.replace(r"\x", "")),
+                ("interpreter", current_params.get("interpreter"), interpreter_path),
+            ]
+            if current != expected
+        )
+        if mismatch:
+            raise RuntimeError(
+                f"Found unknown {binfmt.name} binfmt configuration:\n"
+                f"{mismatch}\n"
+                f"  - Run 'echo -1 > {binfmt_path}' to disable this binfmt globally"
+            )
+
+        return True
+    return False
+
+
+def _install_binfmt(mount_path: str, binfmt: _Binfmt, interpreter_path: str) -> None:
+    _logger.info(":: Installing %s binfmt as %r ...", binfmt.name, interpreter_path)
+    with open(os.path.join(mount_path, "register"), "w") as register_file:
+        register_file.write(f":{binfmt.arch}:M::{binfmt.magic}:{binfmt.mask}:{interpreter_path}:")
+
+
+# =====
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mount", action="store_true", help="Mount binfmt_misc")
+    parser.add_argument("--binfmt-misc", default="/proc/sys/fs/binfmt_misc", help="Path to binfmt_misc")
+    parser.add_argument("arch", choices=sorted(_BINFMT_DB))
+    parser.add_argument("interpreter")
+    parser.add_argument("-d", "--debug", action="store_const", const=logging.DEBUG, dest="log_level")
+    parser.set_defaults(log_level=logging.INFO)
+
+    options = parser.parse_args()
+    logging.basicConfig(level=options.log_level, format="%(message)s")
+
+    if os.getuid() != 0:
+        raise RuntimeError("You must be a root")
+
+    if options.mount:
+        _mount_binfmt(options.binfmt_misc)
+
+    binfmt = _BINFMT_DB[options.arch]
+    if not _check_binfmt(options.binfmt_misc, binfmt, options.interpreter):
+        _install_binfmt(options.binfmt_misc, binfmt, options.interpreter)
+
+    _logger.info(":: %s binfmt handler %r is ready", binfmt.name, options.interpreter)
+
+
+# =====
+if __name__ == "__main__":
+    main()

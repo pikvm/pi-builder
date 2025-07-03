@@ -1,0 +1,3 @@
+RUN pkg-install mkinitcpio-rootdelay
+RUN bash -c '. /etc/mkinitcpio.conf && sed -i -e "s|^HOOKS=.*|HOOKS=(${HOOKS[*]} rootdelay)|" /etc/mkinitcpio.conf'
+RUN mkinitcpio -P

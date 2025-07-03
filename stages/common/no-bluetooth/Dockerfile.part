@@ -1,0 +1,6 @@
+RUN case "$BOARD" in \
+		rpi3|rpi4|zero2w) \
+			sed -i "1s;^;dtoverlay=disable-bt\n;" \
+				"`[ "$OS" = "rpios" ] && echo /boot/firmware || echo /boot`/config.txt" \
+			;; \
+	esac

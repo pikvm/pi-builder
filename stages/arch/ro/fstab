@@ -1,0 +1,8 @@
+LABEL=PIBOOT  /boot               vfat   ro,errors=remount-ro    0 2
+tmpfs         /var/lib/systemd    tmpfs  mode=0755               0 0
+tmpfs         /var/lib/private    tmpfs  mode=0700               0 0
+tmpfs         /var/lib/dhclient   tmpfs  mode=0755               0 0
+tmpfs         /var/lib/dhcpcd     tmpfs  mode=0750               0 0
+tmpfs         /var/log            tmpfs  nodev,nosuid            0 0
+tmpfs         /var/tmp            tmpfs  nodev,nosuid,mode=1777  0 0
+tmpfs         /tmp                tmpfs  nodev,nosuid,mode=1777  0 0

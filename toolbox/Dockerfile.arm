@@ -1,0 +1,13 @@
+FROM scratch
+ADD %BASE_ROOTFS_TGZ% /
+
+RUN mkdir -p /etc/pacman.d/hooks \
+	&& ln -s /dev/null /etc/pacman.d/hooks/30-systemd-tmpfiles.hook
+
+RUN sed -i -e "s|^HOOKS=.*|HOOKS=(base udev block filesystems)|g" /etc/mkinitcpio.conf
+
+ARG ARCH_DIST_REPO_URL
+ENV ARCH_DIST_REPO_URL=$ARCH_DIST_REPO_URL
+RUN echo "Server = $ARCH_DIST_REPO_URL/\$arch/\$repo" > /etc/pacman.d/mirrorlist \
+	&& pacman-key --init \
+	&& pacman-key --populate archlinuxarm

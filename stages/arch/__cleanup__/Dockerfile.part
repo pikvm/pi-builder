@@ -1,0 +1,30 @@
+# when using podman and systemd-resolved is used on host,
+# /run/systemd/resolve/resolv.conf is a bind-mount and cannot be deleted.
+RUN rm -rf \
+		/etc/*- \
+		/var/cache/pacman/pkg/* \
+		/var/lib/systemd/* \
+		/var/lib/private/* \
+		/var/log/* \
+		/var/tmp/* \
+		/tmp/* \
+		/run/* \
+		/root/.bash_history \
+		/root/.cache \
+		/home/*/.bash_history \
+		/home/*/.cache \
+		`LC_ALL=C pacman -Qo /var/cache/* 2>&1 | grep 'error: No package owns' | awk '{print $5}'` \
+	|| true
+
+RUN sed -i -e "s/^#!!!CheckSpace/CheckSpace/g" /etc/pacman.conf
+
+# Check if we have fsck.repair=yes
+RUN grep -q -o '\<fsck.repair=yes\>' /boot/cmdline.txt
+
+RUN rm -f \
+	/etc/pacman.d/hooks/30-systemd-tmpfiles.hook \
+	/usr/local/bin/pkg-install
+
+RUN touch -m --date="2000-01-01" /etc/fstab
+
+ENV LD_PRELOAD=

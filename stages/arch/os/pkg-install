@@ -1,0 +1,9 @@
+#!/bin/sh
+if [ `whoami` != root ]; then
+	echo "Only root can do that"
+	exit 1
+fi
+pacman --noconfirm --ask=4 -Syu && pacman --noconfirm --ask=4 --needed -S $@
+retval=$?
+rm -rf /var/cache/pacman/pkg/*
+exit $retval

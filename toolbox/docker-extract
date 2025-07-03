@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+# ========================================================================== #
+#                                                                            #
+#    docker-extract - extract docker image to directory.                     #
+#                                                                            #
+#    Partially based on https://github.com/larsks/undocker and contains      #
+#    many major fixes for image spec v1.2.                                   #
+#                                                                            #
+#    Copyright (C) 2019-2023  Maxim Devaev <mdevaev@gmail.com>               #
+#                                                                            #
+#    This program is free software: you can redistribute it and/or modify    #
+#    it under the terms of the GNU General Public License as published by    #
+#    the Free Software Foundation, either version 3 of the License, or       #
+#    (at your option) any later version.                                     #
+#                                                                            #
+#    This program is distributed in the hope that it will be useful,         #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of          #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
+#    GNU General Public License for more details.                            #
+#                                                                            #
+#    You should have received a copy of the GNU General Public License       #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.  #
+#                                                                            #
+# ========================================================================== #
+
+
+import os
+import tarfile
+import shutil
+import json
+import contextlib
+import argparse
+import logging
+
+
+# =====
+_logger = logging.getLogger("docker-extract")
+
+
+# =====
+def _get_image_manifest(image_tar: tarfile.TarFile) -> dict:
+    _logger.debug(":: Reading image manifest")
+    with contextlib.closing(image_tar.extractfile("manifest.json")) as manifest_file:
+        manifest = json.load(manifest_file)  # type: ignore
+        assert len(manifest) == 1, "Can't process manifest.json:\n" + json.dumps(manifest, indent="    ")
+        return manifest[0]
+
+
+def _get_image_layers(image_tar: tarfile.TarFile) -> list[str]:
+    layers = _get_image_manifest(image_tar)["Layers"]
+    for layer_path in layers:
+        _logger.debug("::    Layer: %s", layer_path)
+    return layers
+
+
+def _extract_rootfs(image_tar: tarfile.TarFile, layers: list[str], root_path: str) -> None:
+    # https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+
+    if os.getuid() != 0:
+        raise RuntimeError("You must be a root")
+
+    if os.path.exists(root_path):
+        raise RuntimeError(f"{root_path}: is already exists")
+    os.mkdir(root_path)
+
+    for layer_path in layers:
+        _logger.debug(":: Extracting layer: %s", layer_path)
+
+        with contextlib.closing(image_tar.extractfile(layer_path)) as layer_file:
+            with _TarFile(fileobj=layer_file, errorlevel=1) as layer_tar:
+                members = layer_tar.getmembers()
+
+                for member in members:
+                    # https://github.com/moby/moby/blob/8e610b2b55bfd1bfa9436ab110d311f5e8a74dcb/pkg/archive/whiteouts.go
+                    # https://github.com/moby/moby/blob/8e610b2b55bfd1bfa9436ab110d311f5e8a74dcb/pkg/archive/diff.go
+                    # https://github.com/sylabs/singularity/blob/8a0e3008b29db85d1e23677d98978cafba1fdbe7/src/docker-extract.c#L21
+
+                    member_path = os.path.join(root_path, member.path)  # type: ignore
+                    assert not member_path.startswith(".wh."), member_path
+
+                    if member_path.endswith("/.wh..wh..opq"):
+                        whiteout = os.path.dirname(member_path)
+                        _logger.debug("::    Removing opaque: %s", whiteout)
+                        try:
+                            shutil.rmtree(whiteout)
+                        except FileNotFoundError:
+                            pass
+
+                    elif "/.wh." in member_path:
+                        whiteout = member_path.replace("/.wh.", "/")
+                        if os.path.isdir(whiteout) and not os.path.islink(whiteout):
+                            _logger.debug("::    Removing whiteout D: %s", whiteout)
+                            shutil.rmtree(whiteout)
+                        else:
+                            _logger.debug("::    Removing whiteout F: %s", whiteout)
+                            os.unlink(whiteout)
+
+                layer_tar.extractall(
+                    path=root_path,
+                    members=[
+                        member
+                        for member in members
+                        if (
+                            not member.path.startswith(".wh.")  # type: ignore
+                            and "/.wh." not in member.path  # type: ignore
+                        )
+                    ],
+                    numeric_owner=True,
+                    filter="fully_trusted",
+                )
+
+
+class _TarFile(tarfile.TarFile):
+    def makefile(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        if os.path.lexists(targetpath) and not os.path.isfile(targetpath):
+            os.unlink(targetpath)
+        super().makefile(tarinfo, targetpath)
+
+    def makefifo(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        self.__remove(targetpath)
+        super().makefifo(tarinfo, targetpath)
+
+    def makedev(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        self.__remove(targetpath)
+        super().makedev(tarinfo, targetpath)
+
+    def makelink(self, tarinfo: tarfile.TarInfo, targetpath: str) -> None:
+        self.__remove(targetpath)
+        super().makelink(tarinfo, targetpath)
+
+    def __remove(self, targetpath: str) -> None:
+        if os.path.lexists(targetpath):
+            if os.path.isdir(targetpath) and not os.path.islink(targetpath):
+                shutil.rmtree(targetpath)
+            else:
+                os.unlink(targetpath)
+
+
+# =====
+def _hook_set_hostname(root_path: str, hostname: str) -> None:
+    path = os.path.join(root_path, "etc/hostname")
+    _logger.info(":: Setting up /etc/hostname: %s ...", hostname)
+    with open(path, "w") as file:
+        file.write(hostname)
+
+
+def _hook_set_resolv_symlink(root_path: str, target_path: str) -> None:
+    _logger.info(":: Setting up symlink /etc/resolv.conf -> %s ...", target_path)
+    path = os.path.join(root_path, "etc/resolv.conf")
+    try:
+        os.unlink(path)
+    except FileNotFoundError:
+        pass
+    os.symlink(target_path, path)
+
+
+def _hook_remove_qemu(root_path: str) -> None:
+    _logger.info(":: Removing QEMU ...")
+    for name in os.listdir(os.path.join(root_path, "usr/bin")):
+        if name.startswith("qemu-") and name.endswith(("-static", "-static-orig")):
+            path = os.path.join(root_path, "usr/bin", name)
+            _logger.info("::    Removing %r ...", path)
+            os.remove(path)
+
+
+# =====
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--list-layers", action="store_true", help="List layers in an image")
+    parser.add_argument("--list-tags", action="store_true", help="List tags contained in archive")
+    parser.add_argument("--debug", action="store_const", const=logging.DEBUG, dest="log_level")
+    parser.add_argument("--remove-root", action="store_true", help="Remove destination directory before exporting")
+    parser.add_argument("--root", default="rootfs", help="Output directory (defaults to 'rootfs')")
+    parser.add_argument("--set-hostname", default="", help="Set /etc/hostname")
+    parser.add_argument("--set-resolv-symlink", default="", help="Symlink /etc/resolv.conf to specified path")
+    parser.add_argument("--remove-qemu", action="store_true", help="Remove /usr/bin/qemu-*-static{,-orig}")
+    parser.add_argument("input")
+    parser.set_defaults(log_level=logging.INFO)
+
+    options = parser.parse_args()
+    logging.basicConfig(level=options.log_level, format="%(message)s")
+
+    with tarfile.open(options.input) as image_tar:
+        with contextlib.closing(image_tar.extractfile("repositories")) as repos_file:
+            repos = json.load(repos_file)  # type: ignore
+
+        if options.list_tags:
+            print("\n".join(_get_image_manifest(image_tar)["RepoTags"]))
+
+        elif options.list_layers:
+            print("\n".join(_get_image_layers(image_tar)))
+
+        else:
+            if options.remove_root:
+                if os.path.exists(options.root):
+                    _logger.info(":: Removing an old rootfs %r ...", options.root)
+                    shutil.rmtree(options.root)
+
+            _logger.info(":: Extracting rootfs to %r ...", options.root)
+            _extract_rootfs(image_tar, _get_image_layers(image_tar), options.root)
+
+            if options.set_hostname:
+                _hook_set_hostname(options.root, options.set_hostname)
+
+            if options.set_resolv_symlink:
+                _hook_set_resolv_symlink(options.root, options.set_resolv_symlink)
+
+            if options.remove_qemu:
+                _hook_remove_qemu(options.root)
+
+            _logger.info(":: Success!")
+
+
+# =====
+if __name__ == "__main__":
+    main()
