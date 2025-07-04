@@ -17,6 +17,7 @@ RUN cp /etc/pacman.d/mirrorlist /tmp/pacman.mirrorlist.saved \
 RUN sed -i -e "s/^CheckSpace/#!!!CheckSpace/g" /etc/pacman.conf
 
 RUN pacman --noconfirm --ask=4 -Syy \
+	&& pacman --noconfirm --ask=4 -Syu \
 	&& pacman --needed --noconfirm --ask=4 -S \
 		glibc \
 		openssl \
