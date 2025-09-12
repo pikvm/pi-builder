@@ -13,6 +13,9 @@ RUN rm -f /etc/localtime \
 	&& ln -s "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime \
 	&& dpkg-reconfigure -f noninteractive tzdata
 
+# workaround for Debian bug #856589
+RUN sed -i 's/MODULES=dep/MODULES=most/' /etc/initramfs-tools/initramfs.conf
+
 # Cleanup tips: https://github.com/RPi-Distro/pi-gen/tree/master/stage2
 RUN apt autoremove -y --purge \
 		triggerhappy \
