@@ -47,6 +47,7 @@ _RPIOS_LIST := \
 	$(call append,rpios-,-arm,rpi rpi2 rpi3 rpi4 rpi5 zerow zero2w) \
 	$(call append,rpios-,-aarch64,rpi3 rpi4 rpi5 zero2w)
 
+SHELL := bash
 
 $(call append,,.tgz,$(_RPIOS_LIST)):
 	$(eval _base = $(subst .tgz,,$@))
