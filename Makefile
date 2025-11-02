@@ -62,10 +62,8 @@ REBUILD ?= $(shell uuidgen)
 # =====
 export __HOST_ARCH := $(subst v7l,,$(shell uname -m))
 ifneq ($(__HOST_ARCH),x86_64)
-ifneq ($(__HOST_ARCH),aarch64)
 ifneq ($(__HOST_ARCH),$(ARCH))
 $(error Cross-arch ARM building like $(__HOST_ARCH)<->$(ARCH) is not supported)
-endif
 endif
 endif
 
