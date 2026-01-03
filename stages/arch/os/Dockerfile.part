@@ -15,6 +15,7 @@ RUN cp /etc/pacman.d/mirrorlist /tmp/pacman.mirrorlist.saved \
 	&& pacman-key --populate archlinuxarm
 
 RUN sed -i -e "s/^CheckSpace/#!!!CheckSpace/g" /etc/pacman.conf
+RUN sed -i -e "s/^#DisableSandbox/DisableSandbox/g" /etc/pacman.conf
 
 RUN pacman --noconfirm --ask=4 -Syu \
 	&& pacman --needed --noconfirm --ask=4 -S \

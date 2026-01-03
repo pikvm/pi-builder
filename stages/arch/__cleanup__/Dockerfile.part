@@ -17,6 +17,7 @@ RUN rm -rf \
 	|| true
 
 RUN sed -i -e "s/^#!!!CheckSpace/CheckSpace/g" /etc/pacman.conf
+RUN sed -i -e "s/^DisableSandbox/#DisableSandbox/g" /etc/pacman.conf
 
 # Check if we have fsck.repair=yes
 RUN grep -q -o '\<fsck.repair=yes\>' /boot/cmdline.txt
