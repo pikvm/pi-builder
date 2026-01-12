@@ -181,8 +181,6 @@ def main() -> None:
     logging.basicConfig(level=options.log_level, format="%(message)s")
 
     with tarfile.open(options.input) as image_tar:
-        with contextlib.closing(image_tar.extractfile("repositories")) as repos_file:
-            repos = json.load(repos_file)  # type: ignore
 
         if options.list_tags:
             print("\n".join(_get_image_manifest(image_tar)["RepoTags"]))
