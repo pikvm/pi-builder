@@ -118,6 +118,7 @@ all:
 	@ echo
 	$(call say,"Available commands")
 	@ echo "    make                     # Print this help"
+	@ echo "    make os                  # Build Arch-ARM rootfs according to your config.mk file"
 	@ echo "    make rpi2|rpi3|rpi4|zero2w  # Build Arch-ARM rootfs with pre-defined config"
 	@ echo "    make shell               # Run Arch-ARM shell"
 	@ echo "    make toolbox             # Build the toolbox image"
