@@ -54,7 +54,7 @@ def _get_image_layers(image_tar: tarfile.TarFile) -> list[str]:
 
 
 def _extract_rootfs(image_tar: tarfile.TarFile, layers: list[str], root_path: str) -> None:
-    # https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+    # https://github.com/moby/docker-image-spec
 
     if os.getuid() != 0:
         raise RuntimeError("You must be a root")
@@ -67,16 +67,16 @@ def _extract_rootfs(image_tar: tarfile.TarFile, layers: list[str], root_path: st
         _logger.debug(":: Extracting layer: %s", layer_path)
 
         with contextlib.closing(image_tar.extractfile(layer_path)) as layer_file:
-            # Docker images can contain bare tarfiles or gzipped tarfiles. Try both
-            try:
-                layer_tar = _TarFile.open(fileobj=layer_file, errorlevel=1, mode='r')
-            except:
-                try:
-                    layer_tar = _TarFile.open(fileobj=layer_file, errorlevel=1, mode='r:gz')
-                except Exception as error:
-                    raise error
+            # Docker images can contain bare tarfiles or gzipped tarfiles.
+            # It's not documented for some reason.
+            #   - https://github.com/pikvm/pi-builder/pull/38
 
-            with layer_tar:
+            with _TarFile.open(
+                fileobj=layer_file,
+                errorlevel=1,
+                mode=("r:gz" if layer_path.endswith(".gz") else "r"),
+            ) as layer_tar:
+
                 members = layer_tar.getmembers()
 
                 for member in members:
