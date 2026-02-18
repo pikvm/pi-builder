@@ -20,7 +20,6 @@ RUN sed -i -e "s/^#DisableSandbox/DisableSandbox/g" /etc/pacman.conf
 RUN pacman --noconfirm --ask=4 -Syu \
 	&& pacman --needed --noconfirm --ask=4 -S \
 		openssl \
-		openssl-1.1 \
 		p11-kit \
 		archlinux-keyring \
 		ca-certificates \
