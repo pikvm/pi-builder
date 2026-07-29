@@ -62,7 +62,7 @@ REBUILD ?= $(shell uuidgen)
 # =====
 export __HOST_ARCH := $(subst v7l,,$(shell uname -m))
 ifneq ($(__HOST_ARCH),x86_64)
-ifneq ($(__HOST_ARCH),$(ARCH))
+ifneq ($(__HOST_ARCH),aarch64)
 $(error Cross-arch ARM building like $(__HOST_ARCH)<->$(ARCH) is not supported)
 endif
 endif
@@ -153,10 +153,16 @@ shell: override RUN_OPTS:="$(RUN_OPTS) -i"
 shell: run
 
 
-toolbox: $(call contains,x86_64,$(__HOST_ARCH),,base)
+toolbox: _toolbox-host.$(__HOST_ARCH)
 	$(call say,"Ensuring toolbox image")
 	$(MAKE) -C toolbox toolbox
 	$(call say,"Toolbox image is ready")
+_toolbox-host.arm: base
+	@ true
+_toolbox-host.aarch64: base
+	@ true
+_toolbox-host.x86_64:
+	@ true
 
 
 binfmt: _binfmt-host.$(__HOST_ARCH)
@@ -208,28 +214,36 @@ os: $(__DEP_BINFMT) _buildctx
 
 
 _buildctx: | clean base qemu
-	$(eval _init = $(_BUILD_DIR)/stages/__init__/Dockerfile.part)
+	$(eval _dest = $(_BUILD_DIR)/Dockerfile)
 	$(call say,"Assembling main Dockerfile")
 	#
 	mkdir -p $(_BUILD_DIR)
 	ln base/$(_OS_BOARD_ARCH).tgz $(_BUILD_DIR)
-	test $(ARCH) = $(__HOST_ARCH) \
-		|| ln qemu/qemu-$(ARCH)-static* $(_BUILD_DIR)
-	#
 	cp -a stages/common $(_BUILD_DIR)/stages
 	cp -a stages/$(OS)/* $(_BUILD_DIR)/stages
-	sed -i -e 's|%ADD_BASE_ROOTFS_TGZ%|ADD $(_OS_BOARD_ARCH).tgz /|g' $(_init)
-	test $(ARCH) != $(__HOST_ARCH) \
-		&& sed -i -e 's|%COPY_QEMU_USER_STATIC%|COPY qemu-$(ARCH)-static* /usr/bin/|g' $(_init) \
-		|| sed -i -e 's|%COPY_QEMU_USER_STATIC%||g' $(_init)
+	#
+	echo 'FROM scratch' > $(_dest)
+	echo 'ADD $(_OS_BOARD_ARCH).tgz /' >> $(_dest)
+	#
+	if [ $(__HOST_ARCH) = x86_64 ]; then \
+		ln qemu/qemu-$(ARCH)-static* $(_BUILD_DIR) \
+		; echo 'COPY qemu-$(ARCH)-static* /usr/bin/' >> $(_dest) \
+	; elif [ $(__HOST_ARCH)+$(ARCH) = aarch64+arm ]; then \
+		echo -e '#!/bin/sh\nexec setarch armv7l "$$@"' > $(_BUILD_DIR)/wrap32 \
+		; chmod +x $(_BUILD_DIR)/wrap32 \
+		; echo 'COPY wrap32 /usr/bin/' >> $(_dest) \
+		; echo 'ENTRYPOINT ["/usr/bin/wrap32"]' >> $(_dest) \
+		; echo 'SHELL ["/usr/bin/wrap32", "bash", "-c"]' >> $(_dest) \
+	; fi
+	#
 	for var in OS BOARD ARCH LOCALE TIMEZONE ARCH_DIST_REPO_URL ARCH_PIKVM_REPO_URL ARCH_PIKVM_REPO_KEY; do \
-		echo "ARG $$var" >> $(_init) \
-		&& echo "ENV $$var=\$$$$var" >> $(_init) \
+		echo "ARG $$var" >> $(_dest) \
+		&& echo "ENV $$var=\$$$$var" >> $(_dest) \
 	; done
 	#
-	echo -n > $(_BUILD_DIR)/Dockerfile
+	echo -n >> $(_dest)
 	for stage in $(STAGES); do \
-		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_BUILD_DIR)/Dockerfile \
+		cat $(_BUILD_DIR)/stages/$$stage/Dockerfile.part >> $(_dest) \
 	; done
 	#
 	$(call cachetag,$(_BUILD_DIR))
@@ -310,7 +324,7 @@ extract: $(__DEP_TOOLBOX)
 			/tools/fixup \
 					--set-hostname="$(call read_built_config,HOSTNAME)" \
 					--set-resolv-symlink=/run/systemd/resolve/resolv.conf \
-					$(call contains,x86_64,$(__HOST_ARCH),--remove-qemu,) \
+					--remove-emu-hacks \
 				$(_RESULT_ROOTFS)
 	$(call say,"Extraction complete")
 
