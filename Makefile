@@ -81,6 +81,7 @@ _CACHE_DIR = ./.cache
 _BUILD_DIR = ./.build
 _BUILT_IMAGE_CONFIG = ./.built.conf
 
+_EMPTY_DIR = $(_CACHE_DIR)/$(PROJECT).$(_OS_BOARD_ARCH).empty
 _RESULT_ROOTFS = $(_CACHE_DIR)/$(PROJECT).$(_OS_BOARD_ARCH).rootfs
 _RESULT_IMAGE = $(_CACHE_DIR)/$(PROJECT).$(_OS_BOARD_ARCH).img
 
@@ -291,17 +292,26 @@ extract: $(__DEP_TOOLBOX)
 	mkdir -p $(_CACHE_DIR)
 	$(call cachetag,$(_CACHE_DIR))
 	#
-	$(DOCKER) save --output=$(_RESULT_ROOTFS).tar $(call read_built_config,IMAGE)
+	rm -rf $(_EMPTY_DIR) $(_RESULT_ROOTFS)
+	mkdir $(_EMPTY_DIR) $(_RESULT_ROOTFS)
+	echo "FROM $(call read_built_config,IMAGE)" \
+		| $(DOCKER) build $(_EMPTY_DIR) \
+			--file=- \
+			--output=type=tar,dest=$(_RESULT_ROOTFS).tar
 	$(DOCKER_RUN_TTY) \
 			$(_CACHE_VOLUME_OPTS) \
 		$(_TOOLBOX_IMAGE) \
-			/tools/docker-extract \
-				--remove-root \
-				--root=$(_RESULT_ROOTFS) \
-				--set-hostname="$(call read_built_config,HOSTNAME)" \
-				--set-resolv-symlink=/run/systemd/resolve/resolv.conf \
-				$(call contains,x86_64,$(__HOST_ARCH),--remove-qemu,) \
-			$(_RESULT_ROOTFS).tar
+			tar --sparse -xf \
+				$(_RESULT_ROOTFS).tar \
+				-C $(_RESULT_ROOTFS)
+	$(DOCKER_RUN_TTY) \
+			$(_CACHE_VOLUME_OPTS) \
+		$(_TOOLBOX_IMAGE) \
+			/tools/fixup \
+					--set-hostname="$(call read_built_config,HOSTNAME)" \
+					--set-resolv-symlink=/run/systemd/resolve/resolv.conf \
+					$(call contains,x86_64,$(__HOST_ARCH),--remove-qemu,) \
+				$(_RESULT_ROOTFS)
 	$(call say,"Extraction complete")
 
 

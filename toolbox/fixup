@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+# ========================================================================== #
+#                                                                            #
+#    fixup - make some final fixes in the exported image.                    #
+#                                                                            #
+#    Copyright (C) 2019-2026  Maxim Devaev <mdevaev@gmail.com>               #
+#                                                                            #
+#    This program is free software: you can redistribute it and/or modify    #
+#    it under the terms of the GNU General Public License as published by    #
+#    the Free Software Foundation, either version 3 of the License, or       #
+#    (at your option) any later version.                                     #
+#                                                                            #
+#    This program is distributed in the hope that it will be useful,         #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of          #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
+#    GNU General Public License for more details.                            #
+#                                                                            #
+#    You should have received a copy of the GNU General Public License       #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.  #
+#                                                                            #
+# ========================================================================== #
+
+
+import os
+import argparse
+import logging
+
+
+# =====
+_logger = logging.getLogger("fixup")
+
+
+# =====
+def _hook_set_hostname(root_path: str, hostname: str) -> None:
+    path = os.path.join(root_path, "etc/hostname")
+    _logger.info(":: Setting up /etc/hostname: %s ...", hostname)
+    with open(path, "w") as file:
+        file.write(hostname)
+
+
+def _hook_set_resolv_symlink(root_path: str, target_path: str) -> None:
+    _logger.info(":: Setting up symlink /etc/resolv.conf -> %s ...", target_path)
+    path = os.path.join(root_path, "etc/resolv.conf")
+    try:
+        os.unlink(path)
+    except FileNotFoundError:
+        pass
+    os.symlink(target_path, path)
+
+
+def _hook_remove_qemu(root_path: str) -> None:
+    _logger.info(":: Removing QEMU ...")
+    for name in os.listdir(os.path.join(root_path, "usr/bin")):
+        if name.startswith("qemu-") and name.endswith(("-static", "-static-orig")):
+            path = os.path.join(root_path, "usr/bin", name)
+            _logger.info("::    Removing %r ...", path)
+            os.remove(path)
+
+
+# =====
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--set-hostname", default="", help="Set /etc/hostname")
+    parser.add_argument("--set-resolv-symlink", default="", help="Symlink /etc/resolv.conf to specified path")
+    parser.add_argument("--remove-qemu", action="store_true", help="Remove /usr/bin/qemu-*-static{,-orig}")
+    parser.add_argument("root")
+    parser.set_defaults(log_level=logging.INFO)
+
+    options = parser.parse_args()
+    logging.basicConfig(level=options.log_level, format="%(message)s")
+
+    if options.set_hostname:
+        _hook_set_hostname(options.root, options.set_hostname)
+
+    if options.set_resolv_symlink:
+        _hook_set_resolv_symlink(options.root, options.set_resolv_symlink)
+
+    if options.remove_qemu:
+        _hook_remove_qemu(options.root)
+
+
+# =====
+if __name__ == "__main__":
+    main()

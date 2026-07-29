@@ -36,7 +36,7 @@ Build sequence:
 2. The Arch Linux ARM image is downloaded and loaded into Docker as a base image.
 3. The container is build using the necessary stages -- package installation, configuration, cleanup, etc. 
 4. You can run `docker run` (or `make shell`) in the resulting container to make sure everything's fine.
-5. Pi-builder's utility [docker-extract](https://github.com/pikvm/pi-builder/blob/master/toolbox/docker-extract) extracts the container from Docker's internal storage and moves to the directory, making it an ordinary root file system.
+5. Docker extracts the container from Docker's internal storage and moves to the directory, making it an ordinary root file system.
 6. You can copy the resulting file system to the SD card and use it to load Raspberry Pi.
 
 -----

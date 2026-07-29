@@ -20,6 +20,6 @@ RUN pacman --noconfirm --ask=4 -Syu \
 
 RUN mkdir /tools
 COPY binfmt /tools/
-COPY docker-extract /tools/
+COPY fixup /tools/
 COPY disk /tools/
 COPY install /tools/
