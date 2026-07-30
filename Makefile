@@ -37,7 +37,7 @@ PROJECT ?= common
 OS ?= arch
 export BOARD ?= rpi4
 export ARCH ?= arm
-STAGES ?= __init__ os pikvm-repo pistat watchdog rootdelay no-bluetooth no-audit ro restore-mirrorlist ssh-keygen __cleanup__
+STAGES ?= __init__ os pikvm-repo pistat watchdog rootdelay no-bluetooth ro restore-mirrorlist ssh-keygen __cleanup__
 BUILD_OPTS ?=
 
 HOSTNAME ?= pi
@@ -153,6 +153,7 @@ shell: override RUN_OPTS:="$(RUN_OPTS) -i"
 shell: run
 
 
+.PHONY: toolbox
 toolbox: _toolbox-host.$(__HOST_ARCH)
 	$(call say,"Ensuring toolbox image")
 	$(MAKE) -C toolbox toolbox
@@ -217,6 +218,7 @@ _buildctx: | clean base qemu
 	$(eval _dest = $(_BUILD_DIR)/Dockerfile)
 	$(call say,"Assembling main Dockerfile")
 	#
+	rm -rf $(_BUILD_DIR)
 	mkdir -p $(_BUILD_DIR)
 	ln base/$(_OS_BOARD_ARCH).tgz $(_BUILD_DIR)
 	cp -a stages/common $(_BUILD_DIR)/stages
@@ -227,13 +229,13 @@ _buildctx: | clean base qemu
 	#
 	if [ $(__HOST_ARCH) = x86_64 ]; then \
 		ln qemu/qemu-$(ARCH)-static* $(_BUILD_DIR) \
-		; echo 'COPY qemu-$(ARCH)-static* /usr/bin/' >> $(_dest) \
+		&& echo 'COPY qemu-$(ARCH)-static* /usr/bin/' >> $(_dest) \
 	; elif [ $(__HOST_ARCH)+$(ARCH) = aarch64+arm ]; then \
 		echo -e '#!/bin/sh\nexec setarch armv7l "$$@"' > $(_BUILD_DIR)/wrap32 \
-		; chmod +x $(_BUILD_DIR)/wrap32 \
-		; echo 'COPY wrap32 /usr/bin/' >> $(_dest) \
-		; echo 'ENTRYPOINT ["/usr/bin/wrap32"]' >> $(_dest) \
-		; echo 'SHELL ["/usr/bin/wrap32", "bash", "-c"]' >> $(_dest) \
+		&& chmod +x $(_BUILD_DIR)/wrap32 \
+		&& echo 'COPY wrap32 /usr/bin/' >> $(_dest) \
+		&& echo 'ENTRYPOINT ["/usr/bin/wrap32"]' >> $(_dest) \
+		&& echo 'SHELL ["/usr/bin/wrap32", "bash", "-c"]' >> $(_dest) \
 	; fi
 	#
 	for var in OS BOARD ARCH LOCALE TIMEZONE ARCH_DIST_REPO_URL ARCH_PIKVM_REPO_URL ARCH_PIKVM_REPO_KEY; do \
@@ -250,12 +252,14 @@ _buildctx: | clean base qemu
 	$(call say,"Main Dockerfile is ready")
 
 
+.PHONY: base
 base:
 	$(call say,"Ensuring base rootfs")
 	$(MAKE) -C base $(_OS_BOARD_ARCH).tgz
 	$(call say,"Base rootfs is ready")
 
 
+.PHONY: qemu
 qemu: _qemu-host.$(__HOST_ARCH)
 _qemu-host.arm:
 	@ true
@@ -361,8 +365,3 @@ image: $(__DEP_TOOLBOX) extract
 	mv $(_RESULT_IMAGE)$(_suffix) $(IMAGE)$(_suffix)
 	mv $(_RESULT_IMAGE)$(_suffix).sha1 $(IMAGE)$(_suffix).sha1
 	$(call say,"Image complete")
-
-
-# =====
-.PHONY: toolbox base qemu
-.NOTPARALLEL:
