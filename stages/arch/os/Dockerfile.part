@@ -59,9 +59,6 @@ RUN pacman --noconfirm --ask=4 -Syu \
 RUN (systemctl disable haveged || true) \
 	&& systemctl enable rngd
 
-RUN sed -i -e '/\<pam_systemd\.so\>/ s/^#*/#/' /etc/pam.d/system-login \
-	&& sed -i -e '/\<pam_systemd_home\.so\>/ s/^#*/#/' /etc/pam.d/system-auth
-
 RUN rm -f /etc/systemd/network/en.network /etc/systemd/network/eth.network
 
 # https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
