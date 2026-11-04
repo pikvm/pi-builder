@@ -1,2 +1,3 @@
-LABEL=PIBOOT  /boot  vfat   defaults                0 0
+LABEL=PIROOT  /      ext4   discard,noatime         1 1
+LABEL=PIBOOT  /boot  vfat   discard,noatime         1 2
 tmpfs         /tmp   tmpfs  nodev,nosuid,mode=1777  0 0
